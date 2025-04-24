@@ -1,0 +1,242 @@
+body {
+    font-family: 'Roboto Mono', monospace;
+    background-color: #ffffff; /* White background */
+    color: #000000; /* Black text */
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Layout & Structure */
+.section {
+    padding: 40px 20px;
+    border-bottom: 1px solid #000000; /* Black border */
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+.content-block {
+    grid-column: span 1;
+}
+
+.image-block {
+    grid-column: span 1;
+    text-align: center; /* Center image within its block */
+}
+
+.image-block img {
+    max-width: 50%; /* Make image take up half the container width */
+    height: auto;
+    display: block; /* Removes extra space below image */
+    margin: 0 auto; /* Ensure centering */
+   /* Optional: Apply grayscale for starker brutalist look */
+   /* filter: grayscale(100%); */
+}
+
+
+/* Header Styling */
+.header-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Single column layout for header */
+    gap: 10px;
+    text-align: center; /* Center header content */
+    border-bottom: 2px solid #000000; /* Thicker border for header */
+    padding: 20px;
+    background-color: #f0f0f0; /* Light grey background for header */
+}
+
+.header-title {
+    display: inline-block; /* Treat this container as an inline block */
+    /* It will be centered by the parent's text-align: center */
+    /* Text inside it (h1, subtitle) will also inherit text-align: center */
+}
+
+.header-title h1 {
+    font-family: 'Archivo Black', sans-serif; /* Bold, impactful font */
+    font-size: 2.8em; /* Large size */
+    margin: 0;
+    padding: 0;
+    line-height: 1.1;
+    text-transform: uppercase; /* Uppercase for brutalist feel */
+    letter-spacing: 1px;
+    /* Ensure h1 itself doesn't prevent centering */
+    width: auto;
+    display: block; /* Or inline-block if needed, but block should be fine here */
+}
+
+.subtitle {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.9em;
+    font-weight: 700; /* Bolder mono font */
+    text-transform: uppercase;
+    letter-spacing: 2px; /* Wide spacing */
+    /* --- CHANGES BELOW --- */
+    margin: 5px auto 15px auto; /* Use auto for left/right margins */
+    color: #333333; /* Dark grey for subtitle */
+    /* text-align: center; <- Removed this, rely on parent */
+    max-width: none; /* Override global p max-width */
+    width: auto; /* Ensure it takes natural width */
+    display: block; /* Ensure it's treated as a block */
+     /* --- END CHANGES --- */
+}
+
+.header-nav {
+    display: flex;
+    justify-content: center; /* Center nav items */
+    flex-wrap: wrap; /* Allow nav items to wrap on smaller screens */
+    gap: 15px;
+}
+
+.header-nav a {
+    font-family: 'Roboto Mono', monospace;
+    text-decoration: none;
+    color: #000000; /* Black nav links */
+    font-weight: 700;
+    font-size: 0.9em;
+    padding: 5px 8px;
+    border: 1px solid transparent; /* Prepare for potential hover effect */
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.header-nav a:hover,
+.header-nav a:focus {
+    background-color: #000000; /* Black background on hover */
+    color: #ffffff; /* White text on hover */
+    outline: none;
+}
+
+
+/* Headings & Text */
+h2 {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 2em; /* Bold headings */
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #000000; /* Underline headings */
+    display: inline-block; /* Make border only as wide as text */
+    padding-bottom: 5px;
+}
+
+h3 {
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 700;
+    font-size: 1.2em;
+    margin-top: 30px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+p, li {
+    margin-bottom: 15px;
+    max-width: 70ch; /* Improve readability */
+}
+
+/* Links */
+a {
+    color: #000000; /* Black links */
+    text-decoration: underline; /* Underline links for clarity */
+}
+
+a:hover, a:focus {
+    color: #555555; /* Dark grey on hover */
+    text-decoration: none; /* Remove underline on hover */
+}
+
+/* Publications List */
+.publication-category ul {
+    list-style-type: none; /* Remove default bullets */
+    padding-left: 0;
+}
+
+.publication-category li {
+    margin-bottom: 10px;
+    padding-left: 1.5em; /* Indent list items */
+    position: relative;
+}
+
+/* Optional: Add a simple marker for list items */
+.publication-category li::before {
+    content: '//'; /* Brutalist-style marker */
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-weight: 700;
+    color: #555555; /* Grey marker */
+}
+
+/* Services List */
+#services ul {
+     list-style-type: none;
+     padding-left: 0;
+}
+#services li {
+    padding-left: 1.5em;
+    position: relative;
+    margin-bottom: 8px;
+}
+#services li::before {
+    content: '+'; /* Different marker for services */
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-weight: 700;
+}
+
+
+/* Contact Section */
+.contact-section {
+    background-color: #f0f0f0; /* Light grey background */
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 40px;
+    font-size: 0.8em;
+    color: #555555;
+    border-top: 1px solid #cccccc; /* Light grey border top */
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .header-title h1 {
+        font-size: 2.2em;
+    }
+    h2 {
+        font-size: 1.8em;
+    }
+    .grid-container {
+        grid-template-columns: 1fr; /* Stack elements vertically on smaller screens */
+    }
+     .image-block {
+        margin-top: 20px; /* Add space above image when stacked */
+    }
+}
+
+@media (max-width: 480px) {
+     .header-title h1 {
+        font-size: 1.8em;
+    }
+    .subtitle {
+        font-size: 0.8em;
+        letter-spacing: 1px;
+        /* Ensure subtitle specific styles don't break centering */
+        margin: 5px auto 15px auto; /* Keep auto margins */
+    }
+     h2 {
+        font-size: 1.5em;
+    }
+    .header-nav a {
+        font-size: 0.8em;
+        padding: 4px 6px;
+        gap: 10px;
+    }
+}
