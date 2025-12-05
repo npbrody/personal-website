@@ -185,6 +185,151 @@
         #focus-info button:hover {
             background: #f0f0f0;
         }
+    
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            #controls {
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            #controls h1 {
+                font-size: 16px;
+                width: 100%;
+            }
+            
+            #controls span:not(.control-group span) {
+                display: none; /* Hide subtitle on mobile */
+            }
+            
+            .control-group {
+                font-size: 11px;
+            }
+            
+            .control-group label {
+                font-size: 10px;
+            }
+            
+            input[type="range"] {
+                width: 100px;
+            }
+            
+            .button {
+                font-size: 10px;
+                padding: 5px 10px;
+            }
+            
+            #info {
+                max-width: 90%;
+                font-size: 11px;
+                padding: 10px;
+            }
+            
+            #info h3 {
+                font-size: 13px;
+            }
+            
+            .similar-list {
+                font-size: 10px;
+            }
+            
+            .similar-item {
+                font-size: 10px;
+            }
+            
+            #focus-info {
+                font-size: 12px;
+                padding: 8px 16px;
+                max-width: 90%;
+            }
+            
+            #focus-info button {
+                padding: 3px 8px;
+                font-size: 10px;
+            }
+            
+            .legend {
+                padding: 10px;
+                font-size: 9px;
+                max-width: 90%;
+            }
+            
+            .legend h4 {
+                font-size: 11px;
+            }
+            
+            .legend-item {
+                font-size: 9px;
+            }
+            
+            .color-gradient {
+                width: 100px;
+                height: 15px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #controls {
+                padding: 8px;
+                gap: 8px;
+            }
+            
+            #controls h1 {
+                font-size: 14px;
+            }
+            
+            .control-group {
+                flex-wrap: wrap;
+            }
+            
+            input[type="range"] {
+                width: 80px;
+            }
+            
+            .button {
+                font-size: 9px;
+                padding: 4px 8px;
+            }
+            
+            #info {
+                top: 60px;
+                right: 5px;
+                max-width: 85%;
+            }
+            
+            #focus-info {
+                top: 5px;
+                font-size: 11px;
+                padding: 6px 12px;
+            }
+            
+            #focus-info span {
+                display: block;
+                margin-bottom: 4px;
+            }
+            
+            #focus-info button {
+                margin-left: 0;
+            }
+            
+            .legend {
+                bottom: 5px;
+                left: 5px;
+                padding: 8px;
+                font-size: 8px;
+            }
+            
+            .legend-item {
+                font-size: 8px;
+                margin: 3px 0;
+            }
+            
+            .color-gradient {
+                width: 80px;
+                height: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2125,6 +2270,76 @@
             paused = !paused;
         }
         
+
+        
+        // Mobile touch support
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchStartNodeX = 0;
+        let touchStartNodeY = 0;
+        
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+            
+            // Check if touching a node
+            let touchedNode = null;
+            for (const node of nodes) {
+                const dx = touchX - node.x;
+                const dy = touchY - node.y;
+                if (Math.sqrt(dx * dx + dy * dy) < node.radius) {
+                    touchedNode = node;
+                    break;
+                }
+            }
+            
+            if (touchedNode) {
+                if (focusedNode === touchedNode) {
+                    clearFocus();
+                } else {
+                    setFocus(touchedNode);
+                }
+            } else if (focusedNode) {
+                clearFocus();
+            } else if (touchedNode) {
+                draggedNode = touchedNode;
+                touchedNode.dragging = true;
+                touchStartX = touchX;
+                touchStartY = touchY;
+                touchStartNodeX = touchedNode.x;
+                touchStartNodeY = touchedNode.y;
+            }
+        }, { passive: false });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (draggedNode && !focusedNode) {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const touchX = touch.clientX - rect.left;
+                const touchY = touch.clientY - rect.top;
+                
+                const deltaX = touchX - touchStartX;
+                const deltaY = touchY - touchStartY;
+                
+                draggedNode.x = touchStartNodeX + deltaX;
+                draggedNode.y = touchStartNodeY + deltaY;
+                draggedNode.vx = 0;
+                draggedNode.vy = 0;
+            }
+        }, { passive: false });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (draggedNode) {
+                draggedNode.dragging = false;
+                draggedNode = null;
+            }
+        }, { passive: false });
+
         animate();
     </script>
 </body>
