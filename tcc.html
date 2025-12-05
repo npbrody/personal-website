@@ -1,0 +1,2131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music League - Weighted Taste Similarity</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #controls {
+            background: #1a1a1a;
+            padding: 15px;
+            border-bottom: 2px solid #333;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        #controls h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .control-group label {
+            font-size: 12px;
+            color: #aaa;
+        }
+        
+        input[type="range"] {
+            width: 150px;
+        }
+        
+        .button {
+            background: #3a3a3a;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .button:hover {
+            background: #4a4a4a;
+        }
+        
+        #canvas-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        canvas {
+            display: block;
+            cursor: grab;
+        }
+        
+        canvas:active {
+            cursor: grabbing;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(26, 26, 26, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            font-size: 12px;
+            max-width: 320px;
+            display: none;
+        }
+        
+        #info.visible {
+            display: block;
+        }
+        
+        #info h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #1db954;
+        }
+        
+        .similar-list {
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 4px;
+        }
+        
+        .similar-item {
+            padding: 3px 0;
+            font-size: 11px;
+        }
+        
+        .legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(26, 26, 26, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            font-size: 11px;
+        }
+        
+        .legend h4 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            color: #1db954;
+        }
+        
+        .legend-item {
+            margin: 5px 0;
+        }
+        
+        .color-gradient {
+            height: 20px;
+            width: 150px;
+            background: linear-gradient(90deg, 
+                rgb(220, 38, 38), 
+                rgb(234, 88, 12), 
+                rgb(250, 204, 21), 
+                rgb(34, 197, 94), 
+                rgb(59, 130, 246), 
+                rgb(139, 92, 246));
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+    
+        #focus-info {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(29, 185, 84, 0.95);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 700;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        
+        #focus-info.visible {
+            display: block;
+        }
+        
+        #focus-info button {
+            background: white;
+            color: #1db954;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 12px;
+            margin-left: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 12px;
+        }
+        
+        #focus-info button:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="controls">
+            <h1>🎵 Weighted Taste Similarity Network</h1>
+            <span style="font-size: 12px; color: #888;">Cosine similarity - higher points on same songs = stronger agreement</span>
+            
+            <div class="control-group">
+                <label>Min Similarity:</label>
+                <input type="range" id="min-similarity" min="0" max="0.7" value="0.30" step="0.05">
+                <span id="similarity-val">0.30</span>
+            </div>
+            
+            <div class="control-group">
+                <label>Repulsion:</label>
+                <input type="range" id="repulsion" min="5000" max="20000" value="10000" step="500">
+                <span id="repulsion-val">10000</span>
+            </div>
+            
+            <button class="button" onclick="resetSimulation()">Reset</button>
+            <button class="button" onclick="togglePause()">Pause/Resume</button>
+        </div>
+        
+        <div id="canvas-container">
+            <canvas id="network"></canvas>
+            <div id="info"></div>
+            <div id="focus-info">
+                <span id="focus-name"></span>
+                <button onclick="clearFocus()">Clear Focus</button>
+            </div>
+            <div class="legend">
+                <h4>Weighted Similarity</h4>
+                <div class="legend-item">
+                    <strong>Method:</strong> Cosine similarity on vote vectors
+                </div>
+                <div class="legend-item">
+                    Both give 5 pts > Both give 1 pt > One gives 5, other gives 0
+                </div>
+                <div class="legend-item" style="margin-top: 10px;">
+                    <strong>Edge colors show similarity:</strong>
+                </div>
+                <div class="color-gradient"></div>
+                <div style="display: flex; justify-content: space-between; font-size: 9px; color: #888;">
+                    <span>31% (Red)</span>
+                    <span>45% (Yellow)</span>
+                    <span>58% (Green)</span>
+                    <span>68% (Purple)</span>
+                </div>
+                <div class="legend-item" style="margin-top: 10px;">
+                    💡 Thicker edge = stronger similarity<br>
+                    💡 Hover for detailed stats<br>
+                    💡 Click node to focus & center<br>                    💡 Drag nodes to rearrange
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tasteData = {
+  "nodes": [
+    {
+      "id": "0263d0a1607e4418999665a088dd2565",
+      "name": "Keith Van_O"
+    },
+    {
+      "id": "0395912d255248bfb6c3937fb9a61c73",
+      "name": "aleeceeya99"
+    },
+    {
+      "id": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "name": "Tommy Grindle"
+    },
+    {
+      "id": "089213939dc44c07a9204c34aa7ce4cf",
+      "name": "Lori"
+    },
+    {
+      "id": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "name": "Lesley Brodwell"
+    },
+    {
+      "id": "450444bf0d0b49759a0d8ff013f9cc71",
+      "name": "Frank Chapaholic"
+    },
+    {
+      "id": "53bc207685224bd89327eefb108dc12d",
+      "name": "Erin Ayling Hurley"
+    },
+    {
+      "id": "5f1fb2f18f7148c8bd71e3b322365069",
+      "name": "Matthew Scott Baker"
+    },
+    {
+      "id": "6b6ccf0f888f431894af1f3c52028462",
+      "name": "Rubbish"
+    },
+    {
+      "id": "6ee8a7493b104d8ebfb8668426d47528",
+      "name": "jmiller1226-us"
+    },
+    {
+      "id": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "name": "Sabrina Carpenter"
+    },
+    {
+      "id": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "name": "Nick Brody"
+    },
+    {
+      "id": "9e4dd86698bc4f68b49cd683b2547e85",
+      "name": "Sarah Abuzaid"
+    },
+    {
+      "id": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "name": "seafoamgreen2007"
+    },
+    {
+      "id": "d073d872d1ae4f05ab90c35eb0611610",
+      "name": "ChristieLou"
+    },
+    {
+      "id": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "name": "Thomas Heard \ud83d\udc7b"
+    }
+  ],
+  "edges": [
+    {
+      "person1": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "person2": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "similarity": 0.631,
+      "common_songs": 280,
+      "both_liked": 91,
+      "both_rejected": 86,
+      "disagreements": 103,
+      "binary_similarity": 0.632,
+      "pearson": 0.333
+    },
+    {
+      "person1": "6ee8a7493b104d8ebfb8668426d47528",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.615,
+      "common_songs": 280,
+      "both_liked": 99,
+      "both_rejected": 86,
+      "disagreements": 95,
+      "binary_similarity": 0.661,
+      "pearson": 0.312
+    },
+    {
+      "person1": "450444bf0d0b49759a0d8ff013f9cc71",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.609,
+      "common_songs": 280,
+      "both_liked": 94,
+      "both_rejected": 81,
+      "disagreements": 105,
+      "binary_similarity": 0.625,
+      "pearson": 0.292
+    },
+    {
+      "person1": "6ee8a7493b104d8ebfb8668426d47528",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.609,
+      "common_songs": 280,
+      "both_liked": 77,
+      "both_rejected": 114,
+      "disagreements": 89,
+      "binary_similarity": 0.682,
+      "pearson": 0.409
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "450444bf0d0b49759a0d8ff013f9cc71",
+      "similarity": 0.596,
+      "common_songs": 280,
+      "both_liked": 94,
+      "both_rejected": 82,
+      "disagreements": 104,
+      "binary_similarity": 0.629,
+      "pearson": 0.28
+    },
+    {
+      "person1": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.589,
+      "common_songs": 280,
+      "both_liked": 102,
+      "both_rejected": 71,
+      "disagreements": 107,
+      "binary_similarity": 0.618,
+      "pearson": 0.198
+    },
+    {
+      "person1": "6b6ccf0f888f431894af1f3c52028462",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.584,
+      "common_songs": 280,
+      "both_liked": 102,
+      "both_rejected": 59,
+      "disagreements": 119,
+      "binary_similarity": 0.575,
+      "pearson": 0.123
+    },
+    {
+      "person1": "53bc207685224bd89327eefb108dc12d",
+      "person2": "6b6ccf0f888f431894af1f3c52028462",
+      "similarity": 0.582,
+      "common_songs": 280,
+      "both_liked": 98,
+      "both_rejected": 57,
+      "disagreements": 125,
+      "binary_similarity": 0.554,
+      "pearson": 0.119
+    },
+    {
+      "person1": "6ee8a7493b104d8ebfb8668426d47528",
+      "person2": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "similarity": 0.58,
+      "common_songs": 280,
+      "both_liked": 94,
+      "both_rejected": 74,
+      "disagreements": 112,
+      "binary_similarity": 0.6,
+      "pearson": 0.232
+    },
+    {
+      "person1": "5f1fb2f18f7148c8bd71e3b322365069",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.576,
+      "common_songs": 280,
+      "both_liked": 84,
+      "both_rejected": 91,
+      "disagreements": 105,
+      "binary_similarity": 0.625,
+      "pearson": 0.279
+    },
+    {
+      "person1": "53bc207685224bd89327eefb108dc12d",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.572,
+      "common_songs": 280,
+      "both_liked": 89,
+      "both_rejected": 55,
+      "disagreements": 136,
+      "binary_similarity": 0.514,
+      "pearson": 0.159
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "53bc207685224bd89327eefb108dc12d",
+      "similarity": 0.567,
+      "common_songs": 280,
+      "both_liked": 97,
+      "both_rejected": 64,
+      "disagreements": 119,
+      "binary_similarity": 0.575,
+      "pearson": 0.153
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "6b6ccf0f888f431894af1f3c52028462",
+      "similarity": 0.563,
+      "common_songs": 280,
+      "both_liked": 95,
+      "both_rejected": 58,
+      "disagreements": 127,
+      "binary_similarity": 0.546,
+      "pearson": 0.108
+    },
+    {
+      "person1": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.562,
+      "common_songs": 280,
+      "both_liked": 81,
+      "both_rejected": 79,
+      "disagreements": 120,
+      "binary_similarity": 0.571,
+      "pearson": 0.244
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "similarity": 0.56,
+      "common_songs": 280,
+      "both_liked": 96,
+      "both_rejected": 73,
+      "disagreements": 111,
+      "binary_similarity": 0.604,
+      "pearson": 0.159
+    },
+    {
+      "person1": "450444bf0d0b49759a0d8ff013f9cc71",
+      "person2": "53bc207685224bd89327eefb108dc12d",
+      "similarity": 0.56,
+      "common_songs": 280,
+      "both_liked": 102,
+      "both_rejected": 70,
+      "disagreements": 108,
+      "binary_similarity": 0.614,
+      "pearson": 0.174
+    },
+    {
+      "person1": "53bc207685224bd89327eefb108dc12d",
+      "person2": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "similarity": 0.554,
+      "common_songs": 280,
+      "both_liked": 100,
+      "both_rejected": 60,
+      "disagreements": 120,
+      "binary_similarity": 0.571,
+      "pearson": 0.101
+    },
+    {
+      "person1": "6b6ccf0f888f431894af1f3c52028462",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.553,
+      "common_songs": 280,
+      "both_liked": 95,
+      "both_rejected": 50,
+      "disagreements": 135,
+      "binary_similarity": 0.518,
+      "pearson": 0.053
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.551,
+      "common_songs": 280,
+      "both_liked": 96,
+      "both_rejected": 75,
+      "disagreements": 109,
+      "binary_similarity": 0.611,
+      "pearson": 0.147
+    },
+    {
+      "person1": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.547,
+      "common_songs": 280,
+      "both_liked": 98,
+      "both_rejected": 65,
+      "disagreements": 117,
+      "binary_similarity": 0.582,
+      "pearson": 0.111
+    },
+    {
+      "person1": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.545,
+      "common_songs": 280,
+      "both_liked": 88,
+      "both_rejected": 68,
+      "disagreements": 124,
+      "binary_similarity": 0.557,
+      "pearson": 0.151
+    },
+    {
+      "person1": "6b6ccf0f888f431894af1f3c52028462",
+      "person2": "9e4dd86698bc4f68b49cd683b2547e85",
+      "similarity": 0.541,
+      "common_songs": 280,
+      "both_liked": 82,
+      "both_rejected": 70,
+      "disagreements": 128,
+      "binary_similarity": 0.543,
+      "pearson": 0.154
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "similarity": 0.54,
+      "common_songs": 280,
+      "both_liked": 84,
+      "both_rejected": 76,
+      "disagreements": 120,
+      "binary_similarity": 0.571,
+      "pearson": 0.172
+    },
+    {
+      "person1": "d073d872d1ae4f05ab90c35eb0611610",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.537,
+      "common_songs": 280,
+      "both_liked": 75,
+      "both_rejected": 97,
+      "disagreements": 108,
+      "binary_similarity": 0.614,
+      "pearson": 0.271
+    },
+    {
+      "person1": "53bc207685224bd89327eefb108dc12d",
+      "person2": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "similarity": 0.535,
+      "common_songs": 280,
+      "both_liked": 93,
+      "both_rejected": 68,
+      "disagreements": 119,
+      "binary_similarity": 0.575,
+      "pearson": 0.143
+    },
+    {
+      "person1": "450444bf0d0b49759a0d8ff013f9cc71",
+      "person2": "6b6ccf0f888f431894af1f3c52028462",
+      "similarity": 0.534,
+      "common_songs": 280,
+      "both_liked": 99,
+      "both_rejected": 61,
+      "disagreements": 120,
+      "binary_similarity": 0.571,
+      "pearson": 0.087
+    },
+    {
+      "person1": "6b6ccf0f888f431894af1f3c52028462",
+      "person2": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "similarity": 0.53,
+      "common_songs": 280,
+      "both_liked": 93,
+      "both_rejected": 48,
+      "disagreements": 139,
+      "binary_similarity": 0.504,
+      "pearson": 0.01
+    },
+    {
+      "person1": "089213939dc44c07a9204c34aa7ce4cf",
+      "person2": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "similarity": 0.528,
+      "common_songs": 280,
+      "both_liked": 80,
+      "both_rejected": 82,
+      "disagreements": 118,
+      "binary_similarity": 0.579,
+      "pearson": 0.229
+    },
+    {
+      "person1": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "person2": "53bc207685224bd89327eefb108dc12d",
+      "similarity": 0.527,
+      "common_songs": 280,
+      "both_liked": 90,
+      "both_rejected": 60,
+      "disagreements": 130,
+      "binary_similarity": 0.536,
+      "pearson": 0.095
+    },
+    {
+      "person1": "450444bf0d0b49759a0d8ff013f9cc71",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.526,
+      "common_songs": 280,
+      "both_liked": 97,
+      "both_rejected": 76,
+      "disagreements": 107,
+      "binary_similarity": 0.618,
+      "pearson": 0.132
+    },
+    {
+      "person1": "6ee8a7493b104d8ebfb8668426d47528",
+      "person2": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "similarity": 0.526,
+      "common_songs": 280,
+      "both_liked": 81,
+      "both_rejected": 90,
+      "disagreements": 109,
+      "binary_similarity": 0.611,
+      "pearson": 0.206
+    },
+    {
+      "person1": "53bc207685224bd89327eefb108dc12d",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.521,
+      "common_songs": 280,
+      "both_liked": 98,
+      "both_rejected": 60,
+      "disagreements": 122,
+      "binary_similarity": 0.564,
+      "pearson": 0.048
+    },
+    {
+      "person1": "5f1fb2f18f7148c8bd71e3b322365069",
+      "person2": "6b6ccf0f888f431894af1f3c52028462",
+      "similarity": 0.514,
+      "common_songs": 280,
+      "both_liked": 89,
+      "both_rejected": 69,
+      "disagreements": 122,
+      "binary_similarity": 0.564,
+      "pearson": 0.093
+    },
+    {
+      "person1": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "person2": "9e4dd86698bc4f68b49cd683b2547e85",
+      "similarity": 0.514,
+      "common_songs": 280,
+      "both_liked": 77,
+      "both_rejected": 73,
+      "disagreements": 130,
+      "binary_similarity": 0.536,
+      "pearson": 0.137
+    },
+    {
+      "person1": "6b6ccf0f888f431894af1f3c52028462",
+      "person2": "6ee8a7493b104d8ebfb8668426d47528",
+      "similarity": 0.512,
+      "common_songs": 280,
+      "both_liked": 92,
+      "both_rejected": 59,
+      "disagreements": 129,
+      "binary_similarity": 0.539,
+      "pearson": 0.052
+    },
+    {
+      "person1": "53bc207685224bd89327eefb108dc12d",
+      "person2": "5f1fb2f18f7148c8bd71e3b322365069",
+      "similarity": 0.511,
+      "common_songs": 280,
+      "both_liked": 76,
+      "both_rejected": 70,
+      "disagreements": 134,
+      "binary_similarity": 0.521,
+      "pearson": 0.133
+    },
+    {
+      "person1": "450444bf0d0b49759a0d8ff013f9cc71",
+      "person2": "5f1fb2f18f7148c8bd71e3b322365069",
+      "similarity": 0.51,
+      "common_songs": 280,
+      "both_liked": 75,
+      "both_rejected": 86,
+      "disagreements": 119,
+      "binary_similarity": 0.575,
+      "pearson": 0.193
+    },
+    {
+      "person1": "53bc207685224bd89327eefb108dc12d",
+      "person2": "6ee8a7493b104d8ebfb8668426d47528",
+      "similarity": 0.51,
+      "common_songs": 280,
+      "both_liked": 89,
+      "both_rejected": 59,
+      "disagreements": 132,
+      "binary_similarity": 0.529,
+      "pearson": 0.081
+    },
+    {
+      "person1": "6ee8a7493b104d8ebfb8668426d47528",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.505,
+      "common_songs": 280,
+      "both_liked": 91,
+      "both_rejected": 76,
+      "disagreements": 113,
+      "binary_similarity": 0.596,
+      "pearson": 0.107
+    },
+    {
+      "person1": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "person2": "6ee8a7493b104d8ebfb8668426d47528",
+      "similarity": 0.498,
+      "common_songs": 280,
+      "both_liked": 79,
+      "both_rejected": 74,
+      "disagreements": 127,
+      "binary_similarity": 0.546,
+      "pearson": 0.125
+    },
+    {
+      "person1": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.495,
+      "common_songs": 280,
+      "both_liked": 92,
+      "both_rejected": 58,
+      "disagreements": 130,
+      "binary_similarity": 0.536,
+      "pearson": 0.006
+    },
+    {
+      "person1": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "person2": "6b6ccf0f888f431894af1f3c52028462",
+      "similarity": 0.494,
+      "common_songs": 280,
+      "both_liked": 87,
+      "both_rejected": 55,
+      "disagreements": 138,
+      "binary_similarity": 0.507,
+      "pearson": -0.002
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.492,
+      "common_songs": 280,
+      "both_liked": 84,
+      "both_rejected": 61,
+      "disagreements": 135,
+      "binary_similarity": 0.518,
+      "pearson": 0.032
+    },
+    {
+      "person1": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "person2": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "similarity": 0.489,
+      "common_songs": 280,
+      "both_liked": 84,
+      "both_rejected": 71,
+      "disagreements": 125,
+      "binary_similarity": 0.554,
+      "pearson": 0.084
+    },
+    {
+      "person1": "9e4dd86698bc4f68b49cd683b2547e85",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.485,
+      "common_songs": 280,
+      "both_liked": 79,
+      "both_rejected": 78,
+      "disagreements": 123,
+      "binary_similarity": 0.561,
+      "pearson": 0.091
+    },
+    {
+      "person1": "450444bf0d0b49759a0d8ff013f9cc71",
+      "person2": "6ee8a7493b104d8ebfb8668426d47528",
+      "similarity": 0.484,
+      "common_songs": 280,
+      "both_liked": 89,
+      "both_rejected": 79,
+      "disagreements": 112,
+      "binary_similarity": 0.6,
+      "pearson": 0.096
+    },
+    {
+      "person1": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "person2": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "similarity": 0.482,
+      "common_songs": 280,
+      "both_liked": 79,
+      "both_rejected": 80,
+      "disagreements": 121,
+      "binary_similarity": 0.568,
+      "pearson": 0.12
+    },
+    {
+      "person1": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.481,
+      "common_songs": 280,
+      "both_liked": 80,
+      "both_rejected": 74,
+      "disagreements": 126,
+      "binary_similarity": 0.55,
+      "pearson": 0.096
+    },
+    {
+      "person1": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "person2": "9e4dd86698bc4f68b49cd683b2547e85",
+      "similarity": 0.478,
+      "common_songs": 280,
+      "both_liked": 76,
+      "both_rejected": 85,
+      "disagreements": 119,
+      "binary_similarity": 0.575,
+      "pearson": 0.11
+    },
+    {
+      "person1": "450444bf0d0b49759a0d8ff013f9cc71",
+      "person2": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "similarity": 0.478,
+      "common_songs": 280,
+      "both_liked": 93,
+      "both_rejected": 64,
+      "disagreements": 123,
+      "binary_similarity": 0.561,
+      "pearson": 0.025
+    },
+    {
+      "person1": "5f1fb2f18f7148c8bd71e3b322365069",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.477,
+      "common_songs": 280,
+      "both_liked": 76,
+      "both_rejected": 77,
+      "disagreements": 127,
+      "binary_similarity": 0.546,
+      "pearson": 0.091
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "6ee8a7493b104d8ebfb8668426d47528",
+      "similarity": 0.475,
+      "common_songs": 280,
+      "both_liked": 63,
+      "both_rejected": 95,
+      "disagreements": 122,
+      "binary_similarity": 0.564,
+      "pearson": 0.19
+    },
+    {
+      "person1": "089213939dc44c07a9204c34aa7ce4cf",
+      "person2": "5f1fb2f18f7148c8bd71e3b322365069",
+      "similarity": 0.475,
+      "common_songs": 280,
+      "both_liked": 70,
+      "both_rejected": 92,
+      "disagreements": 118,
+      "binary_similarity": 0.579,
+      "pearson": 0.185
+    },
+    {
+      "person1": "9e4dd86698bc4f68b49cd683b2547e85",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.475,
+      "common_songs": 280,
+      "both_liked": 77,
+      "both_rejected": 79,
+      "disagreements": 124,
+      "binary_similarity": 0.557,
+      "pearson": 0.078
+    },
+    {
+      "person1": "6b6ccf0f888f431894af1f3c52028462",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.472,
+      "common_songs": 280,
+      "both_liked": 71,
+      "both_rejected": 63,
+      "disagreements": 146,
+      "binary_similarity": 0.479,
+      "pearson": 0.091
+    },
+    {
+      "person1": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.471,
+      "common_songs": 280,
+      "both_liked": 69,
+      "both_rejected": 85,
+      "disagreements": 126,
+      "binary_similarity": 0.55,
+      "pearson": 0.151
+    },
+    {
+      "person1": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.466,
+      "common_songs": 280,
+      "both_liked": 65,
+      "both_rejected": 87,
+      "disagreements": 128,
+      "binary_similarity": 0.543,
+      "pearson": 0.158
+    },
+    {
+      "person1": "6ee8a7493b104d8ebfb8668426d47528",
+      "person2": "9e4dd86698bc4f68b49cd683b2547e85",
+      "similarity": 0.465,
+      "common_songs": 280,
+      "both_liked": 69,
+      "both_rejected": 84,
+      "disagreements": 127,
+      "binary_similarity": 0.546,
+      "pearson": 0.113
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "6b6ccf0f888f431894af1f3c52028462",
+      "similarity": 0.462,
+      "common_songs": 280,
+      "both_liked": 76,
+      "both_rejected": 61,
+      "disagreements": 143,
+      "binary_similarity": 0.489,
+      "pearson": 0.043
+    },
+    {
+      "person1": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.46,
+      "common_songs": 280,
+      "both_liked": 84,
+      "both_rejected": 62,
+      "disagreements": 134,
+      "binary_similarity": 0.521,
+      "pearson": -0.011
+    },
+    {
+      "person1": "089213939dc44c07a9204c34aa7ce4cf",
+      "person2": "53bc207685224bd89327eefb108dc12d",
+      "similarity": 0.458,
+      "common_songs": 280,
+      "both_liked": 80,
+      "both_rejected": 62,
+      "disagreements": 138,
+      "binary_similarity": 0.507,
+      "pearson": 0.046
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "089213939dc44c07a9204c34aa7ce4cf",
+      "similarity": 0.454,
+      "common_songs": 280,
+      "both_liked": 79,
+      "both_rejected": 69,
+      "disagreements": 132,
+      "binary_similarity": 0.529,
+      "pearson": 0.075
+    },
+    {
+      "person1": "089213939dc44c07a9204c34aa7ce4cf",
+      "person2": "450444bf0d0b49759a0d8ff013f9cc71",
+      "similarity": 0.454,
+      "common_songs": 280,
+      "both_liked": 85,
+      "both_rejected": 74,
+      "disagreements": 121,
+      "binary_similarity": 0.568,
+      "pearson": 0.094
+    },
+    {
+      "person1": "53bc207685224bd89327eefb108dc12d",
+      "person2": "9e4dd86698bc4f68b49cd683b2547e85",
+      "similarity": 0.454,
+      "common_songs": 280,
+      "both_liked": 73,
+      "both_rejected": 68,
+      "disagreements": 139,
+      "binary_similarity": 0.504,
+      "pearson": 0.029
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "similarity": 0.452,
+      "common_songs": 280,
+      "both_liked": 70,
+      "both_rejected": 80,
+      "disagreements": 130,
+      "binary_similarity": 0.536,
+      "pearson": 0.104
+    },
+    {
+      "person1": "450444bf0d0b49759a0d8ff013f9cc71",
+      "person2": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "similarity": 0.452,
+      "common_songs": 280,
+      "both_liked": 84,
+      "both_rejected": 78,
+      "disagreements": 118,
+      "binary_similarity": 0.579,
+      "pearson": 0.066
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "0395912d255248bfb6c3937fb9a61c73",
+      "similarity": 0.451,
+      "common_songs": 280,
+      "both_liked": 72,
+      "both_rejected": 80,
+      "disagreements": 128,
+      "binary_similarity": 0.543,
+      "pearson": 0.087
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "5f1fb2f18f7148c8bd71e3b322365069",
+      "similarity": 0.45,
+      "common_songs": 280,
+      "both_liked": 67,
+      "both_rejected": 74,
+      "disagreements": 139,
+      "binary_similarity": 0.504,
+      "pearson": 0.057
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.447,
+      "common_songs": 280,
+      "both_liked": 74,
+      "both_rejected": 75,
+      "disagreements": 131,
+      "binary_similarity": 0.532,
+      "pearson": 0.079
+    },
+    {
+      "person1": "089213939dc44c07a9204c34aa7ce4cf",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.447,
+      "common_songs": 280,
+      "both_liked": 91,
+      "both_rejected": 78,
+      "disagreements": 111,
+      "binary_similarity": 0.604,
+      "pearson": 0.057
+    },
+    {
+      "person1": "089213939dc44c07a9204c34aa7ce4cf",
+      "person2": "6b6ccf0f888f431894af1f3c52028462",
+      "similarity": 0.445,
+      "common_songs": 280,
+      "both_liked": 82,
+      "both_rejected": 56,
+      "disagreements": 142,
+      "binary_similarity": 0.493,
+      "pearson": -0.011
+    },
+    {
+      "person1": "5f1fb2f18f7148c8bd71e3b322365069",
+      "person2": "6ee8a7493b104d8ebfb8668426d47528",
+      "similarity": 0.443,
+      "common_songs": 280,
+      "both_liked": 75,
+      "both_rejected": 84,
+      "disagreements": 121,
+      "binary_similarity": 0.568,
+      "pearson": 0.073
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.442,
+      "common_songs": 280,
+      "both_liked": 73,
+      "both_rejected": 87,
+      "disagreements": 120,
+      "binary_similarity": 0.571,
+      "pearson": 0.096
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "6ee8a7493b104d8ebfb8668426d47528",
+      "similarity": 0.44,
+      "common_songs": 280,
+      "both_liked": 78,
+      "both_rejected": 70,
+      "disagreements": 132,
+      "binary_similarity": 0.529,
+      "pearson": 0.007
+    },
+    {
+      "person1": "089213939dc44c07a9204c34aa7ce4cf",
+      "person2": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "similarity": 0.44,
+      "common_songs": 280,
+      "both_liked": 85,
+      "both_rejected": 68,
+      "disagreements": 127,
+      "binary_similarity": 0.546,
+      "pearson": 0.032
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "similarity": 0.439,
+      "common_songs": 280,
+      "both_liked": 74,
+      "both_rejected": 69,
+      "disagreements": 137,
+      "binary_similarity": 0.511,
+      "pearson": 0.044
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.439,
+      "common_songs": 280,
+      "both_liked": 58,
+      "both_rejected": 87,
+      "disagreements": 135,
+      "binary_similarity": 0.518,
+      "pearson": 0.113
+    },
+    {
+      "person1": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "person2": "450444bf0d0b49759a0d8ff013f9cc71",
+      "similarity": 0.437,
+      "common_songs": 280,
+      "both_liked": 79,
+      "both_rejected": 65,
+      "disagreements": 136,
+      "binary_similarity": 0.514,
+      "pearson": 0.002
+    },
+    {
+      "person1": "6b6ccf0f888f431894af1f3c52028462",
+      "person2": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "similarity": 0.435,
+      "common_songs": 280,
+      "both_liked": 78,
+      "both_rejected": 54,
+      "disagreements": 148,
+      "binary_similarity": 0.471,
+      "pearson": -0.079
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "similarity": 0.433,
+      "common_songs": 280,
+      "both_liked": 76,
+      "both_rejected": 72,
+      "disagreements": 132,
+      "binary_similarity": 0.529,
+      "pearson": 0.011
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "similarity": 0.433,
+      "common_songs": 280,
+      "both_liked": 53,
+      "both_rejected": 72,
+      "disagreements": 155,
+      "binary_similarity": 0.446,
+      "pearson": 0.08
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "6b6ccf0f888f431894af1f3c52028462",
+      "similarity": 0.432,
+      "common_songs": 280,
+      "both_liked": 67,
+      "both_rejected": 81,
+      "disagreements": 132,
+      "binary_similarity": 0.529,
+      "pearson": 0.062
+    },
+    {
+      "person1": "089213939dc44c07a9204c34aa7ce4cf",
+      "person2": "9e4dd86698bc4f68b49cd683b2547e85",
+      "similarity": 0.431,
+      "common_songs": 280,
+      "both_liked": 72,
+      "both_rejected": 89,
+      "disagreements": 119,
+      "binary_similarity": 0.575,
+      "pearson": 0.098
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.429,
+      "common_songs": 280,
+      "both_liked": 74,
+      "both_rejected": 72,
+      "disagreements": 134,
+      "binary_similarity": 0.521,
+      "pearson": 0.037
+    },
+    {
+      "person1": "089213939dc44c07a9204c34aa7ce4cf",
+      "person2": "d073d872d1ae4f05ab90c35eb0611610",
+      "similarity": 0.427,
+      "common_songs": 280,
+      "both_liked": 81,
+      "both_rejected": 69,
+      "disagreements": 130,
+      "binary_similarity": 0.536,
+      "pearson": 0.023
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "5f1fb2f18f7148c8bd71e3b322365069",
+      "similarity": 0.425,
+      "common_songs": 280,
+      "both_liked": 64,
+      "both_rejected": 92,
+      "disagreements": 124,
+      "binary_similarity": 0.557,
+      "pearson": 0.104
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "53bc207685224bd89327eefb108dc12d",
+      "similarity": 0.425,
+      "common_songs": 280,
+      "both_liked": 65,
+      "both_rejected": 83,
+      "disagreements": 132,
+      "binary_similarity": 0.529,
+      "pearson": 0.072
+    },
+    {
+      "person1": "53bc207685224bd89327eefb108dc12d",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.424,
+      "common_songs": 280,
+      "both_liked": 70,
+      "both_rejected": 69,
+      "disagreements": 141,
+      "binary_similarity": 0.496,
+      "pearson": 0.036
+    },
+    {
+      "person1": "5f1fb2f18f7148c8bd71e3b322365069",
+      "person2": "9b31d8a9d4a44d3a8e1f85b958f32a94",
+      "similarity": 0.423,
+      "common_songs": 280,
+      "both_liked": 71,
+      "both_rejected": 68,
+      "disagreements": 141,
+      "binary_similarity": 0.496,
+      "pearson": -0.018
+    },
+    {
+      "person1": "450444bf0d0b49759a0d8ff013f9cc71",
+      "person2": "9e4dd86698bc4f68b49cd683b2547e85",
+      "similarity": 0.422,
+      "common_songs": 280,
+      "both_liked": 70,
+      "both_rejected": 76,
+      "disagreements": 134,
+      "binary_similarity": 0.521,
+      "pearson": 0.027
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.419,
+      "common_songs": 280,
+      "both_liked": 51,
+      "both_rejected": 110,
+      "disagreements": 119,
+      "binary_similarity": 0.575,
+      "pearson": 0.159
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "450444bf0d0b49759a0d8ff013f9cc71",
+      "similarity": 0.417,
+      "common_songs": 280,
+      "both_liked": 71,
+      "both_rejected": 70,
+      "disagreements": 139,
+      "binary_similarity": 0.504,
+      "pearson": 0.041
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "similarity": 0.417,
+      "common_songs": 280,
+      "both_liked": 57,
+      "both_rejected": 91,
+      "disagreements": 132,
+      "binary_similarity": 0.529,
+      "pearson": 0.093
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.411,
+      "common_songs": 280,
+      "both_liked": 65,
+      "both_rejected": 97,
+      "disagreements": 118,
+      "binary_similarity": 0.579,
+      "pearson": 0.095
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "53bc207685224bd89327eefb108dc12d",
+      "similarity": 0.41,
+      "common_songs": 280,
+      "both_liked": 77,
+      "both_rejected": 66,
+      "disagreements": 137,
+      "binary_similarity": 0.511,
+      "pearson": -0.019
+    },
+    {
+      "person1": "5f1fb2f18f7148c8bd71e3b322365069",
+      "person2": "9e4dd86698bc4f68b49cd683b2547e85",
+      "similarity": 0.409,
+      "common_songs": 280,
+      "both_liked": 63,
+      "both_rejected": 91,
+      "disagreements": 126,
+      "binary_similarity": 0.55,
+      "pearson": 0.042
+    },
+    {
+      "person1": "450444bf0d0b49759a0d8ff013f9cc71",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.406,
+      "common_songs": 280,
+      "both_liked": 68,
+      "both_rejected": 82,
+      "disagreements": 130,
+      "binary_similarity": 0.536,
+      "pearson": 0.061
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "089213939dc44c07a9204c34aa7ce4cf",
+      "similarity": 0.404,
+      "common_songs": 280,
+      "both_liked": 66,
+      "both_rejected": 83,
+      "disagreements": 131,
+      "binary_similarity": 0.532,
+      "pearson": 0.083
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "5f1fb2f18f7148c8bd71e3b322365069",
+      "similarity": 0.402,
+      "common_songs": 280,
+      "both_liked": 54,
+      "both_rejected": 105,
+      "disagreements": 121,
+      "binary_similarity": 0.568,
+      "pearson": 0.099
+    },
+    {
+      "person1": "089213939dc44c07a9204c34aa7ce4cf",
+      "person2": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "similarity": 0.402,
+      "common_songs": 280,
+      "both_liked": 73,
+      "both_rejected": 78,
+      "disagreements": 129,
+      "binary_similarity": 0.539,
+      "pearson": 0.045
+    },
+    {
+      "person1": "5f1fb2f18f7148c8bd71e3b322365069",
+      "person2": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "similarity": 0.402,
+      "common_songs": 280,
+      "both_liked": 59,
+      "both_rejected": 79,
+      "disagreements": 142,
+      "binary_similarity": 0.493,
+      "pearson": 0.034
+    },
+    {
+      "person1": "0c2dd0b9282d4e0db7dc45eedcfc80b7",
+      "person2": "5f1fb2f18f7148c8bd71e3b322365069",
+      "similarity": 0.397,
+      "common_songs": 280,
+      "both_liked": 65,
+      "both_rejected": 74,
+      "disagreements": 141,
+      "binary_similarity": 0.496,
+      "pearson": -0.019
+    },
+    {
+      "person1": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.396,
+      "common_songs": 280,
+      "both_liked": 61,
+      "both_rejected": 103,
+      "disagreements": 116,
+      "binary_similarity": 0.586,
+      "pearson": 0.103
+    },
+    {
+      "person1": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "person2": "9e4dd86698bc4f68b49cd683b2547e85",
+      "similarity": 0.391,
+      "common_songs": 280,
+      "both_liked": 69,
+      "both_rejected": 80,
+      "disagreements": 131,
+      "binary_similarity": 0.532,
+      "pearson": -0.014
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "6ee8a7493b104d8ebfb8668426d47528",
+      "similarity": 0.389,
+      "common_songs": 280,
+      "both_liked": 69,
+      "both_rejected": 79,
+      "disagreements": 132,
+      "binary_similarity": 0.529,
+      "pearson": 0.018
+    },
+    {
+      "person1": "9e4dd86698bc4f68b49cd683b2547e85",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.386,
+      "common_songs": 280,
+      "both_liked": 53,
+      "both_rejected": 97,
+      "disagreements": 130,
+      "binary_similarity": 0.536,
+      "pearson": 0.069
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "450444bf0d0b49759a0d8ff013f9cc71",
+      "similarity": 0.379,
+      "common_songs": 280,
+      "both_liked": 57,
+      "both_rejected": 87,
+      "disagreements": 136,
+      "binary_similarity": 0.514,
+      "pearson": 0.037
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "similarity": 0.378,
+      "common_songs": 280,
+      "both_liked": 54,
+      "both_rejected": 73,
+      "disagreements": 153,
+      "binary_similarity": 0.454,
+      "pearson": -0.008
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "9e4dd86698bc4f68b49cd683b2547e85",
+      "similarity": 0.376,
+      "common_songs": 280,
+      "both_liked": 50,
+      "both_rejected": 103,
+      "disagreements": 127,
+      "binary_similarity": 0.546,
+      "pearson": 0.058
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "similarity": 0.375,
+      "common_songs": 280,
+      "both_liked": 53,
+      "both_rejected": 81,
+      "disagreements": 146,
+      "binary_similarity": 0.479,
+      "pearson": 0.002
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "9e4dd86698bc4f68b49cd683b2547e85",
+      "similarity": 0.373,
+      "common_songs": 280,
+      "both_liked": 52,
+      "both_rejected": 79,
+      "disagreements": 149,
+      "binary_similarity": 0.468,
+      "pearson": 0.013
+    },
+    {
+      "person1": "0263d0a1607e4418999665a088dd2565",
+      "person2": "9e4dd86698bc4f68b49cd683b2547e85",
+      "similarity": 0.368,
+      "common_songs": 280,
+      "both_liked": 62,
+      "both_rejected": 68,
+      "disagreements": 150,
+      "binary_similarity": 0.464,
+      "pearson": -0.104
+    },
+    {
+      "person1": "089213939dc44c07a9204c34aa7ce4cf",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.361,
+      "common_songs": 280,
+      "both_liked": 59,
+      "both_rejected": 82,
+      "disagreements": 139,
+      "binary_similarity": 0.504,
+      "pearson": 0.038
+    },
+    {
+      "person1": "089213939dc44c07a9204c34aa7ce4cf",
+      "person2": "6ee8a7493b104d8ebfb8668426d47528",
+      "similarity": 0.36,
+      "common_songs": 280,
+      "both_liked": 72,
+      "both_rejected": 70,
+      "disagreements": 138,
+      "binary_similarity": 0.507,
+      "pearson": -0.051
+    },
+    {
+      "person1": "c029d41cbb7f4bdd8e9dab99530d5183",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.36,
+      "common_songs": 280,
+      "both_liked": 64,
+      "both_rejected": 74,
+      "disagreements": 142,
+      "binary_similarity": 0.493,
+      "pearson": -0.048
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "similarity": 0.355,
+      "common_songs": 280,
+      "both_liked": 52,
+      "both_rejected": 102,
+      "disagreements": 126,
+      "binary_similarity": 0.55,
+      "pearson": 0.051
+    },
+    {
+      "person1": "0395912d255248bfb6c3937fb9a61c73",
+      "person2": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "similarity": 0.352,
+      "common_songs": 280,
+      "both_liked": 64,
+      "both_rejected": 72,
+      "disagreements": 144,
+      "binary_similarity": 0.486,
+      "pearson": -0.039
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "964cb7a8bb514e4d925c58ad5e1e1bd8",
+      "similarity": 0.35,
+      "common_songs": 280,
+      "both_liked": 56,
+      "both_rejected": 92,
+      "disagreements": 132,
+      "binary_similarity": 0.529,
+      "pearson": 0.006
+    },
+    {
+      "person1": "5f1fb2f18f7148c8bd71e3b322365069",
+      "person2": "d2dc55b79b5e47fe9d717c7e0b5d579f",
+      "similarity": 0.327,
+      "common_songs": 280,
+      "both_liked": 57,
+      "both_rejected": 92,
+      "disagreements": 131,
+      "binary_similarity": 0.532,
+      "pearson": -0.031
+    },
+    {
+      "person1": "0403ce88c2ab4c38b9d7d66929edefdd",
+      "person2": "089213939dc44c07a9204c34aa7ce4cf",
+      "similarity": 0.311,
+      "common_songs": 280,
+      "both_liked": 52,
+      "both_rejected": 93,
+      "disagreements": 135,
+      "binary_similarity": 0.518,
+      "pearson": -0.016
+    }
+  ]
+};
+        
+        const canvas = document.getElementById('network');
+        const ctx = canvas.getContext('2d');
+        const info = document.getElementById('info');
+        
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight - 60;
+        
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight - 60;
+        });
+        
+        let REPULSION = 10000;
+        let SPRING = 0.005;
+        let DAMPING = 0.85;
+        let MIN_SIMILARITY = 0.30;
+        let paused = false;
+        
+        // Color palette for nodes
+        const colors = [
+            '#1db954', '#1ed760', '#ff6b6b', '#4ecdc4', '#45b7d1',
+            '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe',
+            '#fd79a8', '#fdcb6e', '#00b894', '#00cec9', '#0984e3', '#74b9ff'
+        ];
+        
+        const nodes = tasteData.nodes.map((n, i) => ({
+            ...n,
+            x: width / 2 + (Math.random() - 0.5) * 400,
+            y: height / 2 + (Math.random() - 0.5) * 400,
+            vx: 0,
+            vy: 0,
+            radius: 20,
+            color: colors[i % colors.length],
+            dragging: false
+        }));
+        
+        const nodeMap = {};
+        nodes.forEach(n => nodeMap[n.id] = n);
+        
+        let edges = tasteData.edges.filter(e => e.similarity >= MIN_SIMILARITY);
+        
+        let focusedNode = null;
+        let originalPositions = {};
+        
+        // Save original positions
+        nodes.forEach(node => {
+            originalPositions[node.id] = { x: node.x, y: node.y };
+        });
+        
+        function setFocus(node) {
+            focusedNode = node;
+            document.getElementById('focus-name').textContent = `Focused on: ${node.name}`;
+            document.getElementById('focus-info').classList.add('visible');
+            canvas.style.cursor = 'default';
+            
+            // Get edges connected to this node
+            const connectedEdges = edges.filter(e => 
+                e.person1 === node.id || e.person2 === node.id
+            );
+            
+            // Sort by similarity (closest = highest similarity)
+            connectedEdges.sort((a, b) => b.similarity - a.similarity);
+            
+            // Move focused node to center
+            node.x = width / 2;
+            node.y = height / 2;
+            node.vx = 0;
+            node.vy = 0;
+            
+            // Arrange other nodes in a circle around the focused node
+            const radius = 250; // Distance from center
+            const angleStep = (2 * Math.PI) / connectedEdges.length;
+            
+            connectedEdges.forEach((edge, index) => {
+                const otherId = edge.person1 === node.id ? edge.person2 : edge.person1;
+                const otherNode = nodeMap[otherId];
+                
+                if (otherNode) {
+                    // Calculate position based on similarity (closer = more similar)
+                    const similarityFactor = edge.similarity;
+                    const distance = radius + (1 - similarityFactor) * 200;
+                    const angle = index * angleStep;
+                    
+                    otherNode.x = node.x + Math.cos(angle) * distance;
+                    otherNode.y = node.y + Math.sin(angle) * distance;
+                    otherNode.vx = 0;
+                    otherNode.vy = 0;
+                }
+            });
+            
+            // Move unconnected nodes to far periphery
+            nodes.forEach(n => {
+                if (n !== node && !connectedEdges.some(e => 
+                    e.person1 === n.id || e.person2 === n.id
+                )) {
+                    const angle = Math.random() * 2 * Math.PI;
+                    const distance = 500;
+                    n.x = node.x + Math.cos(angle) * distance;
+                    n.y = node.y + Math.sin(angle) * distance;
+                    n.vx = 0;
+                    n.vy = 0;
+                }
+            });
+        }
+        
+        function clearFocus() {
+            focusedNode = null;
+            document.getElementById('focus-info').classList.remove('visible');
+            canvas.style.cursor = 'grab';
+            
+            // Restore original positions
+            nodes.forEach(node => {
+                if (originalPositions[node.id]) {
+                    node.x = originalPositions[node.id].x;
+                    node.y = originalPositions[node.id].y;
+                    node.vx = 0;
+                    node.vy = 0;
+                }
+            });
+        }
+
+        
+        // Function to get color based on similarity
+        function getSimilarityColor(similarity) {
+            // Optimized for actual data range (31-68%)
+            // More gradual transitions for better visual balance
+            const colors = [
+                { threshold: 0.31, r: 239, g: 68, b: 68 },    // Light Red - 31%
+                { threshold: 0.38, r: 251, g: 146, b: 60 },   // Orange - 38%
+                { threshold: 0.45, r: 250, g: 204, b: 21 },   // Yellow - 45%
+                { threshold: 0.52, r: 163, g: 230, b: 53 },   // Yellow-Green - 52%
+                { threshold: 0.58, r: 34, g: 197, b: 94 },    // Green - 58%
+                { threshold: 0.63, r: 59, g: 130, b: 246 },   // Blue - 63%
+                { threshold: 0.68, r: 147, g: 51, b: 234 }    // Purple - 68%+
+            ];
+            
+            // Find the two colors to interpolate between
+            let lower = colors[0];
+            let upper = colors[colors.length - 1];
+            
+            for (let i = 0; i < colors.length - 1; i++) {
+                if (similarity >= colors[i].threshold && similarity <= colors[i + 1].threshold) {
+                    lower = colors[i];
+                    upper = colors[i + 1];
+                    break;
+                }
+            }
+            
+            // Interpolate
+            const range = upper.threshold - lower.threshold;
+            const position = range > 0 ? (similarity - lower.threshold) / range : 0;
+            
+            const r = Math.round(lower.r + (upper.r - lower.r) * position);
+            const g = Math.round(lower.g + (upper.g - lower.g) * position);
+            const b = Math.round(lower.b + (upper.b - lower.b) * position);
+            
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+        
+        let draggedNode = null;
+        let hoveredNode = null;
+        let offsetX = 0;
+        let offsetY = 0;
+        
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            // Check if clicking on a node
+            let clickedNode = null;
+            for (const node of nodes) {
+                const dx = mouseX - node.x;
+                const dy = mouseY - node.y;
+                if (Math.sqrt(dx * dx + dy * dy) < node.radius) {
+                    clickedNode = node;
+                    break;
+                }
+            }
+            
+            if (clickedNode) {
+                if (focusedNode === clickedNode) {
+                    clearFocus();
+                } else {
+                    setFocus(clickedNode);
+                }
+            } else if (focusedNode) {
+                clearFocus();
+            } else {
+                // Normal drag behavior
+                for (const node of nodes) {
+                    const dx = mouseX - node.x;
+                    const dy = mouseY - node.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < node.radius) {
+                        draggedNode = node;
+                        node.dragging = true;
+                        offsetX = dx;
+                        offsetY = dy;
+                        break;
+                    }
+                }
+            }
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            if (draggedNode) {
+                draggedNode.x = mouseX - offsetX;
+                draggedNode.y = mouseY - offsetY;
+                draggedNode.vx = 0;
+                draggedNode.vy = 0;
+            } else {
+                hoveredNode = null;
+                for (const node of nodes) {
+                    const dx = mouseX - node.x;
+                    const dy = mouseY - node.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < node.radius) {
+                        hoveredNode = node;
+                        break;
+                    }
+                }
+                
+                if (hoveredNode) {
+                    showInfo(hoveredNode);
+                } else {
+                    info.classList.remove('visible');
+                }
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            if (draggedNode) {
+                draggedNode.dragging = false;
+                draggedNode = null;
+            }
+        });
+        
+        function showInfo(node) {
+            // Use ALL edges from tasteData (not filtered by slider)
+            const allConnections = tasteData.edges.filter(e => 
+                e.person1 === node.id || e.person2 === node.id
+            );
+            
+            allConnections.sort((a, b) => b.similarity - a.similarity);
+            
+            // Show top 4 ABSOLUTE most similar
+            let mostSimilar = allConnections.slice(0, 4).map(e => {
+                const otherId = e.person1 === node.id ? e.person2 : e.person1;
+                const otherName = nodeMap[otherId].name;
+                return `<div class="similar-item">${otherName}: ${(e.similarity * 100).toFixed(1)}%</div>`;
+            }).join('');
+            
+            // Show bottom 4 ABSOLUTE least similar
+            let leastSimilar = allConnections.slice(-4).map(e => {
+                const otherId = e.person1 === node.id ? e.person2 : e.person1;
+                const otherName = nodeMap[otherId].name;
+                return `<div class="similar-item">${otherName}: ${(e.similarity * 100).toFixed(1)}%</div>`;
+            }).join('');
+            
+            // Show how many are currently visible vs total
+            const visibleConnections = edges.filter(e => 
+                e.person1 === node.id || e.person2 === node.id
+            );
+            const avgSimilarity = allConnections.reduce((sum, e) => sum + e.similarity, 0) / allConnections.length;
+            
+            info.innerHTML = `
+                <h3>${node.name}</h3>
+                <div style="margin: 10px 0;">
+                    <strong>Avg Similarity:</strong> ${(avgSimilarity * 100).toFixed(1)}%<br>
+                    <strong>Visible:</strong> ${visibleConnections.length} of ${allConnections.length} connections
+                </div>
+                ${mostSimilar ? `<div class="similar-list"><strong>Most Similar To:</strong>${mostSimilar}</div>` : ''}
+                ${leastSimilar ? `<div class="similar-list"><strong>Least Similar To:</strong>${leastSimilar}</div>` : ''}
+            `;
+            info.classList.add('visible');
+        }
+        
+        function applyForces() {
+            if (paused) return;
+            
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const n1 = nodes[i];
+                    const n2 = nodes[j];
+                    
+                    if (n1.dragging || n2.dragging) continue;
+                    
+                    const dx = n2.x - n1.x;
+                    const dy = n2.y - n1.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    
+                    const force = REPULSION / (dist * dist);
+                    const fx = (dx / dist) * force;
+                    const fy = (dy / dist) * force;
+                    
+                    n1.vx -= fx;
+                    n1.vy -= fy;
+                    n2.vx += fx;
+                    n2.vy += fy;
+                }
+            }
+            
+            edges.forEach(edge => {
+                const node1 = nodeMap[edge.person1];
+                const node2 = nodeMap[edge.person2];
+                
+                if (!node1 || !node2 || node1.dragging || node2.dragging) return;
+                
+                const dx = node2.x - node1.x;
+                const dy = node2.y - node1.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                
+                const idealDist = 100 + (1 - edge.similarity) * 200;
+                const force = (dist - idealDist) * SPRING;
+                const fx = (dx / dist) * force;
+                const fy = (dy / dist) * force;
+                
+                node1.vx += fx;
+                node1.vy += fy;
+                node2.vx -= fx;
+                node2.vy -= fy;
+            });
+            
+            nodes.forEach(node => {
+                if (node.dragging) return;
+                
+                node.vx *= DAMPING;
+                node.vy *= DAMPING;
+                node.x += node.vx;
+                node.y += node.vy;
+                
+                const padding = 50;
+                node.x = Math.max(padding, Math.min(width - padding, node.x));
+                node.y = Math.max(padding, Math.min(height - padding, node.y));
+            });
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            
+            if (focusedNode) {
+                // Focus mode: highlight focused node's connections
+                const focusedEdges = edges.filter(e => 
+                    e.person1 === focusedNode.id || e.person2 === focusedNode.id
+                );
+                const connectedNodeIds = new Set();
+                focusedEdges.forEach(e => {
+                    connectedNodeIds.add(e.person1);
+                    connectedNodeIds.add(e.person2);
+                });
+                
+                // Draw edges
+                edges.forEach(edge => {
+                    const node1 = nodeMap[edge.person1];
+                    const node2 = nodeMap[edge.person2];
+                    if (!node1 || !node2) return;
+                    
+                    const isFocusedEdge = edge.person1 === focusedNode.id || edge.person2 === focusedNode.id;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(node1.x, node1.y);
+                    ctx.lineTo(node2.x, node2.y);
+                    
+                    const color = getSimilarityColor(edge.similarity);
+                    ctx.strokeStyle = color;
+                    ctx.globalAlpha = isFocusedEdge ? 0.8 : 0.05;
+                    ctx.lineWidth = isFocusedEdge ? edge.similarity * 10 : edge.similarity * 8;
+                    ctx.stroke();
+                });
+                
+                ctx.globalAlpha = 1.0;
+                
+                // Draw nodes
+                nodes.forEach(node => {
+                    const isConnected = connectedNodeIds.has(node.id);
+                    const isFocused = node === focusedNode;
+                    
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                    
+                    if (isFocused) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.shadowColor = node.color;
+                        ctx.shadowBlur = 20;
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    } else if (isConnected) {
+                        ctx.fillStyle = node === hoveredNode ? '#ffffff' : node.color;
+                        ctx.fill();
+                    } else {
+                        ctx.fillStyle = '#cccccc';
+                        ctx.globalAlpha = 0.3;
+                        ctx.fill();
+                        ctx.globalAlpha = 1.0;
+                    }
+                    
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = isFocused ? 4 : 2;
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = (isFocused || node === hoveredNode) ? '#000' : (isConnected ? '#fff' : '#999');
+                    if (!isConnected) ctx.globalAlpha = 0.3;
+                    ctx.font = (isFocused ? 'bold 11px' : 'bold 9px') + ' sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    let displayName = node.name;
+                    if (displayName.length > 12 && !isFocused) {
+                        displayName = displayName.substring(0, 10) + '...';
+                    }
+                    
+                    ctx.fillText(displayName, node.x, node.y);
+                    ctx.globalAlpha = 1.0;
+                });
+            } else {
+                // Normal mode
+                edges.forEach(edge => {
+                    const node1 = nodeMap[edge.person1];
+                    const node2 = nodeMap[edge.person2];
+                    if (!node1 || !node2) return;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(node1.x, node1.y);
+                    ctx.lineTo(node2.x, node2.y);
+                    
+                    const color = getSimilarityColor(edge.similarity);
+                    ctx.strokeStyle = color;
+                    ctx.globalAlpha = 0.6;
+                    ctx.lineWidth = edge.similarity * 8;
+                    ctx.stroke();
+                    ctx.globalAlpha = 1.0;
+                });
+                
+                nodes.forEach(node => {
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = node === hoveredNode ? '#ffffff' : node.color;
+                    ctx.fill();
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = node === hoveredNode ? '#000' : '#fff';
+                    ctx.font = 'bold 9px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    let displayName = node.name;
+                    if (displayName.length > 12) {
+                        displayName = displayName.substring(0, 10) + '...';
+                    }
+                    
+                    ctx.fillText(displayName, node.x, node.y);
+                });
+            }
+        }
+        
+        function animate() {
+            applyForces();
+            draw();
+            requestAnimationFrame(animate);
+        }
+        
+        document.getElementById('min-similarity').addEventListener('input', (e) => {
+            MIN_SIMILARITY = parseFloat(e.target.value);
+            document.getElementById('similarity-val').textContent = MIN_SIMILARITY.toFixed(2);
+            edges = tasteData.edges.filter(e => e.similarity >= MIN_SIMILARITY);
+        });
+        
+        document.getElementById('repulsion').addEventListener('input', (e) => {
+            REPULSION = parseFloat(e.target.value);
+            document.getElementById('repulsion-val').textContent = REPULSION;
+        });
+        
+        function resetSimulation() {
+            nodes.forEach(n => {
+                n.x = width / 2 + (Math.random() - 0.5) * 400;
+                n.y = height / 2 + (Math.random() - 0.5) * 400;
+                n.vx = 0;
+                n.vy = 0;
+            });
+        }
+        
+        function togglePause() {
+            paused = !paused;
+        }
+        
+        animate();
+    </script>
+</body>
+</html>
