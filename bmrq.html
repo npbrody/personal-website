@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover Your Music Personality - BMRQ Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .quiz-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #f0f0f0;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .quiz-header {
+            padding: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        }
+
+        .quiz-header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+        }
+
+        .quiz-header p {
+            color: #666;
+            font-size: 1.1em;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .citation-header {
+            background: #f8f9ff;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 0.85em;
+            color: #555;
+            line-height: 1.6;
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .question-container {
+            padding: 40px;
+            min-height: 300px;
+        }
+
+        .question {
+            display: none;
+            opacity: 0;
+            transform: translateX(50px);
+            transition: all 0.3s ease;
+        }
+
+        .question.active {
+            display: block;
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .question-number {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+
+        .options {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .option {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .option.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .option-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .option-text {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .navigation {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            background: #f8f9ff;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            display: none;
+            padding: 40px;
+            text-align: left;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .personality-type {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .personality-type h2 {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .personality-type .dimension {
+            color: #667eea;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+
+        .personality-description {
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .scores-section {
+            margin-top: 30px;
+        }
+
+        .scores-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .score-item {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border-left: 5px solid;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .score-item h4 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.2em;
+        }
+
+        .score-value {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .score-description {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .citation {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .options {
+                flex-direction: column;
+            }
+            
+            .option {
+                min-width: auto;
+            }
+            
+            .quiz-header h1 {
+                font-size: 1.8em;
+            }
+            
+            .question-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+
+        <div class="quiz-header">
+            <h1>🎵 Discover Your Music Personality</h1>
+            <p>Based on the Barcelona Music Reward Questionnaire, this quiz will reveal how you connect with music and what it means in your life.</p>
+        </div>
+
+        <div class="question-container" id="questions">
+            <!-- Questions will be inserted here -->
+        </div>
+
+        <div class="navigation">
+            <button class="btn btn-secondary" id="prevBtn" onclick="previousQuestion()">Previous</button>
+            <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>Next</button>
+        </div>
+
+        <div class="results" id="results">
+            <!-- Results will be shown here -->
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {id: 1, text: "When I share music with someone I feel a special connection with that person.", reverse: false, dimension: "SR"},
+            {id: 2, text: "In my free time I hardly listen to music.", reverse: true, dimension: "MS"},
+            {id: 3, text: "I like listen to music that contains emotion.", reverse: false, dimension: "EE"},
+            {id: 4, text: "Music keeps me company when I'm alone.", reverse: false, dimension: "MR"},
+            {id: 5, text: "I don't like to dance, not even with music I like.", reverse: true, dimension: "SM"},
+            {id: 6, text: "Music makes me bond with other people.", reverse: false, dimension: "SR"},
+            {id: 7, text: "I inform myself about music I like.", reverse: false, dimension: "MS"},
+            {id: 8, text: "I get emotional listening to certain pieces of music.", reverse: false, dimension: "EE"},
+            {id: 9, text: "Music calms and relaxes me.", reverse: false, dimension: "MR"},
+            {id: 10, text: "Music often makes me dance.", reverse: false, dimension: "SM"},
+            {id: 11, text: "I'm always looking for new music.", reverse: false, dimension: "MS"},
+            {id: 12, text: "I can become tearful or cry when I listen to a melody that I like very much.", reverse: false, dimension: "EE"},
+            {id: 13, text: "I like to sing or play an instrument with other people.", reverse: false, dimension: "SR"},
+            {id: 14, text: "Music helps me chill out.", reverse: false, dimension: "MR"},
+            {id: 15, text: "I can't help humming or singing along to music that I like.", reverse: false, dimension: "SM"},
+            {id: 16, text: "At a concert I feel connected to the performers and the audience.", reverse: false, dimension: "SR"},
+            {id: 17, text: "I spend quite a bit of money on music and related items.", reverse: false, dimension: "MS"},
+            {id: 18, text: "I sometimes feel chills when I hear a melody that I like.", reverse: false, dimension: "EE"},
+            {id: 19, text: "Music comforts me.", reverse: false, dimension: "MR"},
+            {id: 20, text: "When I hear a tune I like a lot I can't help tapping or moving to its beat.", reverse: false, dimension: "SM"}
+        ];
+
+        const personalityTypes = {
+            MS: {
+                name: "The Music Explorer",
+                formal: "Musical Seeking",
+                description: "You're a musical adventurer who actively seeks out new sounds and invests time and resources into discovering music. You're the friend who always knows about the latest artists, has carefully curated playlists, and genuinely enjoys the hunt for that perfect song. This seeking behavior often reflects a broader curiosity about life and a desire for novel experiences."
+            },
+            EE: {
+                name: "The Emotional Resonator",
+                formal: "Emotion Evocation",
+                description: "Music is your emotional companion, capable of moving you to tears or giving you chills. You experience music viscerally and use it to connect with deep feelings. This emotional sensitivity through music often indicates a rich inner emotional life and strong empathy in relationships."
+            },
+            MR: {
+                name: "The Musical Healer",
+                formal: "Mood Regulation",
+                description: "You turn to music as your personal therapist and stress reliever. Whether you need comfort after a hard day or want to shift your mood, music is your go-to tool. This suggests you're emotionally intelligent and proactive about managing your mental well-being."
+            },
+            SM: {
+                name: "The Rhythmic Embodier",
+                formal: "Sensory Motor",
+                description: "Music moves you - literally. You can't help but dance, tap, or move to the beat. Your body responds instinctively to rhythm and melody, showing a deep physical connection to music that often extends to being expressive and animated in other areas of life."
+            },
+            SR: {
+                name: "The Musical Connector",
+                formal: "Social Reward",
+                description: "Music is your social glue - you bond with others through shared musical experiences, feel connected at concerts, and love making music with friends. This reveals someone who values community and uses music as a bridge to deeper relationships."
+            }
+        };
+
+        let currentQuestion = 0;
+        let answers = {};
+
+        function initializeQuiz() {
+            renderQuestions();
+            updateProgress();
+            updateNavigation();
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questions');
+            container.innerHTML = '';
+
+            questions.forEach((question, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = `question ${index === 0 ? 'active' : ''}`;
+                questionDiv.innerHTML = `
+                    <div class="question-number">Question ${index + 1} of ${questions.length}</div>
+                    <div class="question-text">${question.text}</div>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(${index}, 1)">
+                            <div class="option-label">1</div>
+                            <div class="option-text">Strongly Disagree</div>
+                        </div>
+                        <div class="option" onclick="selectOption(${index}, 2)">
+                            <div class="option-label">2</div>
+                            <div class="option-text">Disagree</div>
+                        </div>
+                        <div class="option" onclick="selectOption(${index}, 3)">
+                            <div class="option-label">3</div>
+                            <div class="option-text">Neutral</div>
+                        </div>
+                        <div class="option" onclick="selectOption(${index}, 4)">
+                            <div class="option-label">4</div>
+                            <div class="option-text">Agree</div>
+                        </div>
+                        <div class="option" onclick="selectOption(${index}, 5)">
+                            <div class="option-label">5</div>
+                            <div class="option-text">Strongly Agree</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(questionDiv);
+            });
+        }
+
+        function selectOption(questionIndex, value) {
+            answers[questionIndex] = value;
+            
+            // Update visual selection
+            const questionDiv = document.querySelectorAll('.question')[questionIndex];
+            const options = questionDiv.querySelectorAll('.option');
+            options.forEach((option, index) => {
+                option.classList.toggle('selected', index + 1 === value);
+            });
+
+            updateNavigation();
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < questions.length - 1) {
+                document.querySelectorAll('.question')[currentQuestion].classList.remove('active');
+                currentQuestion++;
+                setTimeout(() => {
+                    document.querySelectorAll('.question')[currentQuestion].classList.add('active');
+                }, 150);
+                updateProgress();
+                updateNavigation();
+            } else {
+                showResults();
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestion > 0) {
+                document.querySelectorAll('.question')[currentQuestion].classList.remove('active');
+                currentQuestion--;
+                setTimeout(() => {
+                    document.querySelectorAll('.question')[currentQuestion].classList.add('active');
+                }, 150);
+                updateProgress();
+                updateNavigation();
+            }
+        }
+
+        function updateProgress() {
+            const progress = ((currentQuestion + 1) / questions.length) * 100;
+            document.querySelector('.progress-fill').style.width = progress + '%';
+        }
+
+        function updateNavigation() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            prevBtn.style.visibility = currentQuestion === 0 ? 'hidden' : 'visible';
+            nextBtn.disabled = answers[currentQuestion] === undefined;
+            nextBtn.textContent = currentQuestion === questions.length - 1 ? 'View Results' : 'Next';
+        }
+
+        function calculateScores() {
+            const scores = {
+                MS: 0, // Music Seeking
+                EE: 0, // Emotion Evocation  
+                MR: 0, // Mood Regulation
+                SM: 0, // Sensorimotor
+                SR: 0  // Social Reward
+            };
+
+            questions.forEach((question, index) => {
+                let score = answers[index];
+                if (question.reverse) {
+                    score = 6 - score;
+                }
+                scores[question.dimension] += score;
+            });
+
+            scores.total = Object.values(scores).reduce((sum, score) => sum + score, 0);
+            return scores;
+        }
+
+        function showResults() {
+            const scores = calculateScores();
+            
+            // Sort dimensions by score
+            const sortedDimensions = Object.keys(scores)
+                .filter(key => key !== 'total')
+                .sort((a, b) => scores[b] - scores[a]);
+
+            const primaryType = sortedDimensions[0];
+            const secondaryType = sortedDimensions[1];
+
+            document.getElementById('questions').style.display = 'none';
+            document.querySelector('.navigation').style.display = 'none';
+            document.querySelector('.progress-bar').style.display = 'none';
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="personality-type">
+                    <h2>Your Music Personality Profile</h2>
+                    <div class="personality-description">
+                        You're not just one type - you're a unique blend of all five musical dimensions! Your strongest tendencies are <strong>${personalityTypes[primaryType].name}</strong> (${personalityTypes[primaryType].formal}) followed by <strong>${personalityTypes[secondaryType].name}</strong> (${personalityTypes[secondaryType].formal}), but every dimension contributes to your musical identity.
+                    </div>
+                </div>
+
+                <div class="personality-type" style="background: rgba(102, 126, 234, 0.1);">
+                    <h2>${personalityTypes[primaryType].name}</h2>
+                    <div class="dimension">Your Strongest Dimension: ${personalityTypes[primaryType].formal} (${scores[primaryType]}/20)</div>
+                    <div class="personality-description">${personalityTypes[primaryType].description}</div>
+                </div>
+
+                <div class="personality-type" style="background: rgba(118, 75, 162, 0.1);">
+                    <h2>${personalityTypes[secondaryType].name}</h2>
+                    <div class="dimension">Your Secondary Strength: ${personalityTypes[secondaryType].formal} (${scores[secondaryType]}/20)</div>
+                    <div class="personality-description">${personalityTypes[secondaryType].description}</div>
+                </div>
+
+                <div class="scores-section">
+                    <h3>Your Complete Musical Profile - All Dimensions Ranked</h3>
+                    <p style="color: #666; margin-bottom: 25px; font-style: italic;">Remember: You express ALL of these musical dimensions to different degrees. This ranking shows your relative strengths, but each dimension contributes to your unique musical personality.</p>
+                    ${sortedDimensions.map((dim, index) => {
+                        const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe'];
+                        const rank = index + 1;
+                        const rankSuffix = rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th';
+                        return `
+                            <div class="score-item" style="border-left-color: ${colors[index]}">
+                                <h4>#${rank} - ${personalityTypes[dim].name}</h4>
+                                <div class="score-value" style="color: ${colors[index]}">Score: ${scores[dim]}/20 (${personalityTypes[dim].formal})</div>
+                                <div class="score-description">${getScoreInsight(dim, scores[dim])}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                    
+                    <div class="score-item" style="border-left-color: #333; margin-top: 20px;">
+                        <h4>Overall Music Reward</h4>
+                        <div class="score-value" style="color: #333">${scores.total}/100</div>
+                        <div class="score-description">${getOverallInsight(scores.total)}</div>
+                    </div>
+                </div>
+
+                <div class="citation">
+                    <strong>Based on the Barcelona Music Reward Questionnaire</strong><br>
+                    Mas-Herrero, E., Marco-Pallares, J., Lorenzo-Seva, U., Zatorre, R. J., & Rodriguez-Fornells, A. (2013). Individual differences in music reward experiences. Music Perception, 31(2), 118-138.
+                </div>
+            `;
+            
+            resultsDiv.classList.add('show');
+        }
+
+        function getScoreInsight(dimension, score) {
+            const insights = {
+                MS: {
+                    high: "You're a musical discoverer who actively hunts for new artists and invests in your musical journey. This curiosity likely extends to other areas of your life - you probably enjoy exploring new experiences and aren't afraid to invest time in your passions.",
+                    medium: "You enjoy discovering new music but don't obsess over it. You strike a balance between familiar favorites and new discoveries, suggesting a practical approach to both music and life.",
+                    low: "You tend to stick with familiar music rather than actively seeking new sounds. This preference for the known can indicate comfort with routine and deep appreciation for what already brings you joy."
+                },
+                EE: {
+                    high: "Music is your emotional amplifier - you feel it deeply and aren't afraid of those intense moments. This emotional openness through music often reflects someone who processes feelings fully and connects authentically with others.",
+                    medium: "You experience emotional moments with music but they don't overwhelm you. This suggests emotional balance and the ability to appreciate both the lighter and deeper aspects of musical experience.",
+                    low: "You appreciate music more for its technical or entertainment value than its emotional impact. This can indicate a more analytical approach to experiences and comfort with emotional restraint."
+                },
+                MR: {
+                    high: "Music is your personal wellness toolkit - you instinctively know how to use it to manage your emotional state. This self-awareness and proactive approach to mood management often translates to emotional intelligence in relationships and work.",
+                    medium: "You sometimes turn to music for comfort or energy, showing healthy emotional awareness without complete dependence on external regulation.",
+                    low: "You don't typically use music to manage your emotions, preferring other coping strategies or having naturally stable moods that don't require much external regulation."
+                },
+                SM: {
+                    high: "Your body can't help but respond to music - you're naturally expressive and physically connected to rhythm. This embodied response often indicates someone who is comfortable with self-expression and physical presence.",
+                    medium: "You sometimes move to music when the mood strikes, showing a healthy balance between physical expression and restraint.",
+                    low: "You experience music more intellectually than physically. This can indicate a more reserved personal style or preference for internal rather than external expression."
+                },
+                SR: {
+                    high: "Music is your social connector - you bond through shared playlists, concerts, and musical moments. This reveals someone who values community and understands how shared experiences deepen relationships.",
+                    medium: "You enjoy musical experiences with others but also appreciate solo listening. This balance suggests comfort in both social and solitary settings.",
+                    low: "You tend to experience music as a more personal, individual journey rather than a social activity. This can indicate independence and comfort with solitary pleasures."
+                }
+            };
+
+            if (score >= 16) return insights[dimension].high;
+            if (score >= 12) return insights[dimension].medium;
+            return insights[dimension].low;
+        }
+
+        function getOverallInsight(totalScore) {
+            if (totalScore >= 80) {
+                return "Music is central to your life experience - you derive pleasure from multiple aspects of musical engagement. You likely have a rich relationship with music that enhances many areas of your life, from emotional regulation to social connection.";
+            } else if (totalScore >= 60) {
+                return "You have a healthy appreciation for music that adds meaningful value to your life. Music serves several important functions for you, though you maintain balance with other interests and activities.";
+            } else if (totalScore >= 40) {
+                return "Music plays a moderate role in your life - you appreciate it but don't depend on it heavily for emotional or social needs. You likely have other primary sources of pleasure and connection.";
+            } else {
+                return "Music serves a more background role in your life. You may appreciate it casually but don't rely on it for deep emotional experiences or social connection. This suggests you find fulfillment through other channels.";
+            }
+        }
+
+        // Initialize the quiz when the page loads
+        initializeQuiz();
+    </script>
+</body>
+</html>
