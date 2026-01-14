@@ -1,3 +1,9 @@
+/* Color Variables */
+:root {
+    --accent-color: #2c5aa0; /* Professional blue accent */
+    --accent-hover: #1e4278; /* Darker blue for hover */
+}
+
 body {
     font-family: 'Roboto Mono', monospace;
     background-color: #ffffff; /* White background */
@@ -13,6 +19,12 @@ body {
 .section {
     padding: 40px 20px;
     border-bottom: 1px solid #000000; /* Black border */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Subtle shadow for depth */
+    transition: box-shadow 0.3s ease;
+}
+
+.section:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Slightly stronger on hover */
 }
 
 .grid-container {
@@ -102,14 +114,17 @@ body {
     font-size: 0.9em;
     padding: 5px 8px;
     border: 1px solid transparent; /* Prepare for potential hover effect */
-    transition: background-color 0.2s, color 0.2s;
+    transition: all 0.3s ease; /* Smooth transition for all properties */
 }
 
 .header-nav a:hover,
 .header-nav a:focus {
-    background-color: #000000; /* Black background on hover */
+    background-color: var(--accent-color); /* Blue background on hover */
     color: #ffffff; /* White text on hover */
+    border-color: var(--accent-color);
     outline: none;
+    transform: translateY(-2px); /* Subtle lift effect */
+    box-shadow: 0 2px 8px rgba(44, 90, 160, 0.3); /* Accent-colored shadow */
 }
 
 
@@ -119,9 +134,10 @@ h2 {
     font-size: 2em; /* Bold headings */
     margin-bottom: 20px;
     text-transform: uppercase;
-    border-bottom: 1px solid #000000; /* Underline headings */
+    border-bottom: 3px solid var(--accent-color); /* Accent color underline */
     display: inline-block; /* Make border only as wide as text */
     padding-bottom: 5px;
+    transition: border-color 0.3s ease;
 }
 
 h3 {
@@ -140,13 +156,15 @@ p, li {
 
 /* Links */
 a {
-    color: #000000; /* Black links */
+    color: var(--accent-color); /* Accent color links */
     text-decoration: underline; /* Underline links for clarity */
+    transition: all 0.3s ease; /* Smooth transition */
 }
 
 a:hover, a:focus {
-    color: #555555; /* Dark grey on hover */
+    color: var(--accent-hover); /* Darker blue on hover */
     text-decoration: none; /* Remove underline on hover */
+    text-shadow: 0 1px 2px rgba(44, 90, 160, 0.2); /* Subtle text shadow */
 }
 
 /* Publications List */
@@ -168,7 +186,7 @@ a:hover, a:focus {
     left: 0;
     top: 0;
     font-weight: 700;
-    color: #555555; /* Grey marker */
+    color: var(--accent-color); /* Accent color marker */
 }
 
 /* Services List */
