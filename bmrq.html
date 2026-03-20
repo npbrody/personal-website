@@ -4,7 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discover Your Music Personality - BMRQ Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --accent-color: #2c5aa0;
+            --accent-hover: #1e4278;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,77 +20,77 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Roboto Mono', monospace;
+            background-color: #ffffff;
+            color: #000000;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            line-height: 1.6;
         }
 
         .quiz-container {
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 800px;
+            border: 3px solid #000000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
             width: 100%;
-            overflow: hidden;
             position: relative;
         }
 
         .progress-bar {
-            height: 6px;
+            height: 8px;
             background: #f0f0f0;
+            border-bottom: 2px solid #000000;
             position: relative;
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
+            background: var(--accent-color);
             width: 0%;
             transition: width 0.3s ease;
         }
 
         .quiz-header {
-            padding: 30px;
+            padding: 40px;
             text-align: center;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            background: #f0f0f0;
+            border-bottom: 2px solid #000000;
         }
 
         .quiz-header h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 2.2em;
+            font-family: 'Archivo Black', sans-serif;
+            color: #000000;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .quiz-header p {
-            color: #666;
-            font-size: 1.1em;
-            line-height: 1.5;
-            margin-bottom: 15px;
-        }
-
-        .citation-header {
-            background: #f8f9ff;
-            padding: 15px 20px;
-            border-radius: 10px;
-            font-size: 0.85em;
-            color: #555;
+            font-family: 'Roboto Mono', monospace;
+            color: #000000;
+            font-size: 1em;
             line-height: 1.6;
-            margin-top: 15px;
-            text-align: left;
+            margin-bottom: 0;
+            max-width: 70ch;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .question-container {
             padding: 40px;
-            min-height: 300px;
+            min-height: 350px;
+            border-bottom: 1px solid #000000;
         }
 
         .question {
             display: none;
             opacity: 0;
-            transform: translateX(50px);
+            transform: translateX(20px);
             transition: all 0.3s ease;
         }
 
@@ -93,94 +101,112 @@
         }
 
         .question-number {
-            color: #667eea;
-            font-weight: bold;
-            font-size: 1.1em;
-            margin-bottom: 10px;
+            font-family: 'Roboto Mono', monospace;
+            color: var(--accent-color);
+            font-weight: 700;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .question-text {
-            font-size: 1.3em;
-            color: #333;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.2em;
+            color: #000000;
             margin-bottom: 30px;
-            line-height: 1.4;
+            line-height: 1.5;
+            font-weight: 400;
         }
 
         .options {
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
         }
 
         .option {
             flex: 1;
             min-width: 120px;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
+            padding: 15px 10px;
+            border: 2px solid #000000;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             background: white;
+            font-family: 'Roboto Mono', monospace;
         }
 
         .option:hover {
-            border-color: #667eea;
+            background-color: var(--accent-color);
+            color: #ffffff;
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 2px 8px rgba(44, 90, 160, 0.3);
         }
 
         .option.selected {
-            border-color: #667eea;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: var(--accent-color);
             color: white;
+            border-color: var(--accent-hover);
         }
 
         .option-label {
-            font-weight: bold;
+            font-weight: 700;
             margin-bottom: 5px;
+            font-size: 1.1em;
         }
 
         .option-text {
-            font-size: 0.9em;
-            opacity: 0.8;
+            font-size: 0.75em;
+            font-weight: 400;
         }
 
         .navigation {
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
-            background: #f8f9ff;
+            background: #f0f0f0;
+            border-top: 1px solid #cccccc;
         }
 
         .btn {
+            font-family: 'Roboto Mono', monospace;
             padding: 12px 30px;
-            border: none;
-            border-radius: 25px;
-            font-size: 1em;
+            border: 2px solid #000000;
+            font-size: 0.9em;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-weight: bold;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: var(--accent-color);
             color: white;
+            border-color: var(--accent-color);
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 2px 8px rgba(44, 90, 160, 0.3);
         }
 
         .btn-secondary {
-            background: #f0f0f0;
-            color: #666;
+            background: white;
+            color: #000000;
+        }
+
+        .btn-secondary:hover {
+            background: #000000;
+            color: #ffffff;
         }
 
         .btn:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
             transform: none;
         }
@@ -196,29 +222,39 @@
         }
 
         .personality-type {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            background: #f0f0f0;
             padding: 30px;
-            border-radius: 15px;
+            border: 2px solid #000000;
             margin-bottom: 30px;
             text-align: center;
         }
 
         .personality-type h2 {
-            color: #333;
+            font-family: 'Archivo Black', sans-serif;
+            color: #000000;
             font-size: 2em;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border-bottom: 3px solid var(--accent-color);
+            display: inline-block;
+            padding-bottom: 5px;
         }
 
         .personality-type .dimension {
-            color: #667eea;
-            font-size: 1.2em;
-            margin-bottom: 15px;
+            font-family: 'Roboto Mono', monospace;
+            color: var(--accent-color);
+            font-size: 1em;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
         }
 
         .personality-description {
-            font-size: 1.1em;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1em;
             line-height: 1.6;
-            color: #555;
+            color: #000000;
+            text-align: left;
         }
 
         .scores-section {
@@ -226,61 +262,104 @@
         }
 
         .scores-section h3 {
-            color: #333;
+            font-family: 'Archivo Black', sans-serif;
+            color: #000000;
             margin-bottom: 20px;
-            font-size: 1.5em;
+            font-size: 1.8em;
+            text-transform: uppercase;
+            border-bottom: 3px solid var(--accent-color);
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+
+        .scores-section > p {
+            font-family: 'Roboto Mono', monospace;
+            margin-bottom: 25px;
+            color: #333333;
         }
 
         .score-item {
             background: white;
             padding: 20px;
-            margin-bottom: 15px;
-            border-radius: 10px;
-            border-left: 5px solid;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            border: 2px solid #000000;
+            border-left: 6px solid;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
         .score-item h4 {
-            color: #333;
-            margin-bottom: 8px;
-            font-size: 1.2em;
+            font-family: 'Roboto Mono', monospace;
+            color: #000000;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            font-weight: 700;
+            text-transform: uppercase;
         }
 
         .score-value {
-            font-weight: bold;
-            font-size: 1.1em;
-            margin-bottom: 10px;
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 700;
+            font-size: 1em;
+            margin-bottom: 12px;
         }
 
         .score-description {
-            color: #666;
-            line-height: 1.5;
+            font-family: 'Roboto Mono', monospace;
+            color: #000000;
+            line-height: 1.6;
+            font-size: 0.95em;
         }
 
         .citation {
             margin-top: 40px;
             padding: 20px;
-            background: #f8f9ff;
-            border-radius: 10px;
-            font-size: 0.9em;
-            color: #666;
+            background: #f0f0f0;
+            border: 1px solid #000000;
+            font-size: 0.85em;
+            color: #000000;
             text-align: center;
+            font-family: 'Roboto Mono', monospace;
         }
 
-        @media (max-width: 600px) {
+        .citation a {
+            color: var(--accent-color);
+            text-decoration: underline;
+            transition: all 0.3s ease;
+        }
+
+        .citation a:hover {
+            color: var(--accent-hover);
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .quiz-header h1 {
+                font-size: 2em;
+            }
+
             .options {
                 flex-direction: column;
             }
-            
+
             .option {
                 min-width: auto;
             }
-            
+        }
+
+        @media (max-width: 480px) {
             .quiz-header h1 {
-                font-size: 1.8em;
+                font-size: 1.6em;
             }
-            
+
             .question-container {
+                padding: 20px;
+            }
+
+            .navigation {
+                padding: 15px 20px;
+            }
+
+            .results {
                 padding: 20px;
             }
         }
@@ -293,7 +372,7 @@
         </div>
 
         <div class="quiz-header">
-            <h1>🎵 Discover Your Music Personality</h1>
+            <h1>Music Personality Quiz</h1>
             <p>Based on the Barcelona Music Reward Questionnaire, this quiz will reveal how you connect with music and what it means in your life.</p>
         </div>
 
@@ -544,7 +623,7 @@
 
                 <div class="citation">
                     <strong>Based on the Barcelona Music Reward Questionnaire</strong><br>
-                    Mas-Herrero, E., Marco-Pallares, J., Lorenzo-Seva, U., Zatorre, R. J., & Rodriguez-Fornells, A. (2013). Individual differences in music reward experiences. Music Perception, 31(2), 118-138.
+                    Mas-Herrero, E., Marco-Pallares, J., Lorenzo-Seva, U., Zatorre, R. J., & Rodriguez-Fornells, A. (2013). <a href="https://online.ucpress.edu/mp/article-abstract/31/2/118/62587/Individual-Differences-in-Music-Reward-Experiences" target="_blank" style="color: #667eea; text-decoration: none; border-bottom: 1px dotted #667eea;">Individual differences in music reward experiences</a>. Music Perception, 31(2), 118-138.
                 </div>
             `;
             
