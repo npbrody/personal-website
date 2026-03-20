@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music League · Song Checker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0c0f;
+    --surface: #141418;
+    --surface2: #1c1c22;
+    --border: #2a2a35;
+    --accent: #d4f244;
+    --accent2: #7c6fe0;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --danger: #ff5c5c;
+    --s1: #f2a244;
+    --s2: #44c8f2;
+  }
+
+  html { height: 100%; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px 80px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(22px, 5vw, 38px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: var(--text);
+  }
+
+  h1 span {
+    color: var(--accent);
+  }
+
+  .subtitle {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 300;
+  }
+
+  .stat-strip {
+    display: flex;
+    gap: 24px;
+    margin-top: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .stat strong {
+    color: var(--text);
+  }
+
+  /* Search box */
+  .search-wrap {
+    width: 100%;
+    max-width: 580px;
+    margin-bottom: 32px;
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 4px 4px 4px 20px;
+    gap: 12px;
+    transition: border-color 0.2s;
+  }
+
+  .search-box:focus-within {
+    border-color: var(--accent);
+  }
+
+  .search-icon {
+    color: var(--muted);
+    flex-shrink: 0;
+    font-size: 18px;
+  }
+
+  #searchInput {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    color: var(--text);
+    padding: 14px 0;
+    min-width: 0;
+  }
+
+  #searchInput::placeholder { color: var(--muted); }
+
+  .clear-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 8px;
+    display: none;
+    font-size: 18px;
+    transition: color 0.15s;
+  }
+
+  .clear-btn:hover { color: var(--text); }
+  .clear-btn.visible { display: flex; }
+
+  /* Results */
+  .results-area {
+    width: 100%;
+    max-width: 580px;
+  }
+
+  .results-header {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding: 0 4px;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+  }
+
+  .no-results .no-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+  }
+
+  .no-results h3 {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .no-results p {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .safe-message {
+    background: rgba(212, 242, 68, 0.06);
+    border: 1px solid rgba(212, 242, 68, 0.2);
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+  }
+
+  .safe-message .safe-icon { font-size: 36px; margin-bottom: 10px; }
+
+  .safe-message h3 {
+    font-family: 'Space Mono', monospace;
+    font-size: 15px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .safe-message p { font-size: 14px; color: var(--muted); }
+
+  .result-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: border-color 0.15s;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .result-card:hover {
+    border-color: var(--accent2);
+  }
+
+  .result-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    background: var(--surface2);
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .result-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+  .result-info { flex: 1; min-width: 0; }
+
+  .result-title {
+    font-weight: 600;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+
+  .result-artist {
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .season-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 4px 9px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+
+  .badge-S1 {
+    background: rgba(242, 162, 68, 0.15);
+    color: var(--s1);
+    border: 1px solid rgba(242, 162, 68, 0.3);
+  }
+
+  .badge-S2 {
+    background: rgba(68, 200, 242, 0.12);
+    color: var(--s2);
+    border: 1px solid rgba(68, 200, 242, 0.25);
+  }
+
+  .spotify-link {
+    color: var(--muted);
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+    text-decoration: none;
+    font-size: 18px;
+  }
+
+  .result-card:hover .spotify-link { opacity: 1; }
+
+  .duplicate-warning {
+    background: rgba(255, 92, 92, 0.06);
+    border: 1.5px solid rgba(255, 92, 92, 0.25);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--danger);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--muted);
+  }
+
+  .empty-state .big-icon {
+    font-size: 52px;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .empty-state h3 {
+    font-family: 'Space Mono', monospace;
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .empty-state p {
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+
+  .match-highlight {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Scrollable list when browsing all */
+  .all-songs-wrap {
+    width: 100%;
+    max-width: 580px;
+    margin-top: 48px;
+  }
+
+  .all-songs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .all-songs-header h2 {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .filter-tabs {
+    display: flex;
+    gap: 6px;
+  }
+
+  .filter-tab {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--muted);
+    transition: all 0.15s;
+    letter-spacing: 0.06em;
+  }
+
+  .filter-tab.active-all { background: var(--surface2); color: var(--text); border-color: var(--border); }
+  .filter-tab.active-s1 { background: rgba(242,162,68,0.15); color: var(--s1); border-color: rgba(242,162,68,0.3); }
+  .filter-tab.active-s2 { background: rgba(68,200,242,0.12); color: var(--s2); border-color: rgba(68,200,242,0.25); }
+
+  .song-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 520px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .song-list::-webkit-scrollbar { width: 4px; }
+  .song-list::-webkit-scrollbar-track { background: transparent; }
+  .song-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .song-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 16px;
+    border-radius: 9px;
+    background: var(--surface);
+    font-size: 14px;
+    border: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+
+  .song-row:hover { border-color: var(--border); }
+
+  .song-row-title {
+    flex: 1;
+    font-weight: 500;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .song-row-artist {
+    font-size: 12px;
+    color: var(--muted);
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+
+  footer {
+    margin-top: 64px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Music League · Submission History</div>
+  <h1>Already been <span>played?</span></h1>
+  <p class="subtitle">Search before you submit — check if a song's already been used.</p>
+  <div class="stat-strip">
+    <span class="stat"><strong id="totalCount">—</strong> total songs</span>
+    <span class="stat"><strong id="s1Count">—</strong> in Season 1</span>
+    <span class="stat"><strong id="s2Count">—</strong> in Season 2</span>
+  </div>
+</header>
+
+<!-- Search -->
+<div class="search-wrap">
+  <div class="search-box">
+    <span class="search-icon">♫</span>
+    <input type="text" id="searchInput" placeholder="Search by song title or artist…" autocomplete="off" spellcheck="false">
+    <button class="clear-btn" id="clearBtn" aria-label="Clear search">✕</button>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="results-area" id="resultsArea">
+  <div class="empty-state">
+    <span class="big-icon">🎵</span>
+    <h3>Start typing to search</h3>
+    <p>We'll check both Season 1 and Season 2 submissions instantly. Scroll down to browse the full archive.</p>
+  </div>
+</div>
+
+<!-- Browse all -->
+<div class="all-songs-wrap" id="browseSection">
+  <div class="all-songs-header">
+    <h2>Full archive</h2>
+    <div class="filter-tabs">
+      <button class="filter-tab active-all" data-filter="all" onclick="setFilter('all', this)">All</button>
+      <button class="filter-tab" data-filter="S1" onclick="setFilter('S1', this)">S1</button>
+      <button class="filter-tab" data-filter="S2" onclick="setFilter('S2', this)">S2</button>
+    </div>
+  </div>
+  <div class="song-list" id="songList"></div>
+</div>
+
+<footer>576 submissions · Seasons 1 &amp; 2</footer>
+
+<script>
+const SONGS = [{"t":"Doin' Time","a":"Lana Del Rey","s":"S1","id":"0Oqc0kKFsQ6MhFOLBNZIGX"},{"t":"Running Up That Hill","a":"Placebo","s":"S1","id":"0uYVJ8z5kgMayMNPJA6Cz9"},{"t":"dance with me","a":"lucidbeatz","s":"S1","id":"0XxXIiZP0rJBS8S841UVdu"},{"t":"Toxic","a":"Izzy Perri","s":"S1","id":"14Jw4WZnPHhcjjDNpxBHjn"},{"t":"Ahora Te Puedes Marchar","a":"Luis Miguel","s":"S1","id":"1uKjQoh8JZj9ryuYRhpd7E"},{"t":"My Boys","a":"Taken By Trees","s":"S1","id":"1VF4i9DYDaFGWk59bDONDb"},{"t":"Love You Down","a":"INOJ","s":"S1","id":"1Zq9EmqnDKkR1A66tkJBqe"},{"t":"The Medic","a":"Foxing, Sweet Pill","s":"S1","id":"2crdX6OMT6cFM4t84dPo5l"},{"t":"Linger - SiriusXM Session","a":"Royel Otis","s":"S1","id":"2dono2Koz7DEvGwxUsmMLq"},{"t":"Feeling Like I Do - Spotify Singles","a":"Snail Mail","s":"S1","id":"2NqGPfYbG0MyeLi3EMmHuR"},{"t":"Goodbye Horses","a":"††† (Crosses)","s":"S1","id":"3bvFygWgMILQ4VTDvreKR6"},{"t":"Change (In the House of Flies)","a":"Kam Franklin","s":"S1","id":"3ikPh6tW7MQIw6nAFA26XF"},{"t":"LOVE - triple j Like A Version","a":"CHVRCHES","s":"S1","id":"3m2j4C0IRQTvk2pL0fZACy"},{"t":"Burning Down the House","a":"Paramore","s":"S1","id":"3pRCHHfwYNVCOjWSrkGNw1"},{"t":"I Will Survive","a":"CAKE","s":"S1","id":"4THrHKyBL0yaDDw9yg37Zk"},{"t":"Change (In the House of Flies)","a":"Deftones","s":"S1","id":"51c94ac31swyDQj9B3Lzs3"},{"t":"Nothing Compares 2 U","a":"Sinéad O'Connor","s":"S1","id":"5GHY1DFWKz3Prg2V0Iodqo"},{"t":"Time After Time","a":"Iron & Wine","s":"S1","id":"5JEM7lT9uSyhUsKFXwGfSm"},{"t":"I Believe I Can Fly","a":"Me First and the Gimme Gimmes","s":"S1","id":"6C0JXC9vaaoX5aa6A7tWf4"},{"t":"Just Like Heaven","a":"The Watson Twins","s":"S1","id":"6HSwdJ6rsfBkUnz6BEsxLN"},{"t":"If It Makes You Happy","a":"Michael Cera Palin","s":"S1","id":"6k7H7hhHyg3DmWdF2fDptt"},{"t":"Landslide - Remastered","a":"The Smashing Pumpkins","s":"S1","id":"6N7JMoaUYgo4pwPgsnSobr"},{"t":"Tipsy - Club Mix","a":"J-Kwon","s":"S1","id":"0jSMveIWvnhDIvzqN74Uc7"},{"t":"This Place Is A Prison","a":"The Postal Service","s":"S1","id":"0kF2kApYQILameLQShXcvb"},{"t":"Maggie Mae","a":"The Pietasters","s":"S1","id":"0pk261nEOWmNUr9G6U8yUS"},{"t":"One Bourbon, One Scotch, One Beer","a":"George Thorogood & The Destroyers","s":"S1","id":"0s995gCthqnYJCWGvfKpNt"},{"t":"40oz. To Freedom","a":"Sublime","s":"S1","id":"0vtJ9Dq53hfXE3KyP1yPni"},{"t":"Elderberry Wine","a":"Wednesday","s":"S1","id":"1FZXwhynIW71oSoo1u20L5"},{"t":"Smooth Operator - Single Version","a":"Sade","s":"S1","id":"1Hv1VTm8zeOeybub15mA2R"},{"t":"Red Red Wine","a":"UB40","s":"S1","id":"1tOE1dIyIjsfLJWiQ4ZRJW"},{"t":"Shots","a":"LMFAO, Lil Jon","s":"S1","id":"1V4jC0vJ5525lEF1bFgPX2"},{"t":"Everyday (feat. Rod Stewart, Miguel & Mark Ronson)","a":"A$AP Rocky, Rod Stewart, Miguel, Mark Ronson","s":"S1","id":"2N3U8uTYhjX2KwGT0pf5x0"},{"t":"Brass Monkey","a":"Beastie Boys","s":"S1","id":"2tY1gxCKslfXLFpFofYmJQ"},{"t":"My Own Worst Enemy","a":"Lit","s":"S1","id":"33iv3wnGMrrDugd7GBso1z"},{"t":"Gin and Juice","a":"Snoop Dogg","s":"S1","id":"39QBkWKnap8wRSW4WB9OK0"},{"t":"Roxanne","a":"The Police","s":"S1","id":"3EYOJ48Et32uATr9ZmLnAo"},{"t":"I Gotta Get Drunk","a":"Willie Nelson","s":"S1","id":"3H8dbS5w4jOBsep3mytF8w"},{"t":"Loud Pipes","a":"Ratatat","s":"S1","id":"3qkFIjYRInFasy2jeDZPgm"},{"t":"Red Bull & Hennessy","a":"Jenny Lewis","s":"S1","id":"3rrzbjHWFyKcCpagbbFjrE"},{"t":"The Nights of Wine and Roses","a":"Japandroids","s":"S1","id":"3uS4xj4hCZfEKYJxZyw0r7"},{"t":"It's Time To Party","a":"Andrew W.K.","s":"S1","id":"4w9FRInfBiUtdysiBqTR8b"},{"t":"Tequila","a":"The Champs","s":"S1","id":"5gJKsGij5oGt5H5RSFYXPa"},{"t":"Two Beers In","a":"Free Throw","s":"S1","id":"5oBarQJHCnHLzyezz0XzFx"},{"t":"Bob","a":"NOFX","s":"S1","id":"5XhMeCYrRhQjL4sUoOmUCE"},{"t":"Champagne Supernova","a":"Oasis","s":"S1","id":"6EMynpZ10GVcwVqiLZj6Ye"},{"t":"Irony of Dying on Your Birthday","a":"Senses Fail","s":"S1","id":"6lp6WbAKL6P94ucTRgwAgg"},{"t":"Swimming Pools (Drank)","a":"Kendrick Lamar","s":"S1","id":"6REbwUNlppTfcnV4d4ZoZi"},{"t":"Imma Be","a":"Black Eyed Peas","s":"S1","id":"7DE6Kpd90MJzAYCqNDCaY4"},{"t":"She's Actin' Single (I'm Drinkin' Doubles)","a":"Gary Stewart","s":"S1","id":"7dZgDd8LYriRdR2kDSQjxx"},{"t":"A Case of You","a":"Joni Mitchell","s":"S1","id":"7shVwhUdVbHpykOfbzvDc1"},{"t":"I Wanna Love You","a":"Akon, Snoop Dogg","s":"S1","id":"0CXVjQI9wsqaGeIARkkpYc"},{"t":"Oochie Wally - Remix","a":"Nas, Bravehearts","s":"S1","id":"0LAlDN9m1VodUMl6Ww1cm1"},{"t":"Drew Barrymore","a":"Bryce Vine","s":"S1","id":"0OgGn1ofaj55l2PcihQQGV"},{"t":"Chocolate Hills","a":"Khruangbin, Leon Bridges","s":"S1","id":"1EUOby36hEzSkTVVKRAWQP"},{"t":"Cbat","a":"Hudson Mohawke","s":"S1","id":"1JGGsCZ9zhgPJIsPy0pwt9"},{"t":"Put It In Your Mouth","a":"Akinyele, Kia Jeffries","s":"S1","id":"2CCoMFhrtBxSii1zR67BNm"},{"t":"Don't Call It Love - 12\" Version","a":"Zero 7","s":"S1","id":"2ikT7zgIJYBcpchNseRmka"},{"t":"Any Time, Any Place","a":"Janet Jackson","s":"S1","id":"2yOm4lN7aTygtXanJFNFWU"},{"t":"Ivy","a":"Frank Ocean","s":"S1","id":"2ZWlPOoWh0626oTaHrnl2a"},{"t":"I Wanna Sex You Up","a":"Color Me Badd","s":"S1","id":"3px156RqKPoqmxq44b3pSD"},{"t":"Chateau Lobby #4 (in C for Two Virgins)","a":"Father John Misty","s":"S1","id":"3wfF0Nw234zHY1vdIWIc2g"},{"t":"Freek'n You","a":"Jodeci","s":"S1","id":"43sNw9nvGYGLYnNiwI8oMZ"},{"t":"Fuck Her Gently","a":"Tenacious D","s":"S1","id":"4BVzMXl6fgEC82DpjTZD0T"},{"t":"Motivation","a":"Kelly Rowland, Lil Wayne","s":"S1","id":"4Cv5dkUBqepa0siwGREihD"},{"t":"Untitled (How Does It Feel)","a":"D'Angelo","s":"S1","id":"4oPNN7syJYSjzDhRerF966"},{"t":"Nobody (feat. Athena Cage)","a":"Keith Sweat, Athena Cage","s":"S1","id":"4SF1747p541umnykBp352Q"},{"t":"Focus","a":"Charli xcx","s":"S1","id":"56mCGN7S1druROilPGNe3R"},{"t":"Partition","a":"Beyoncé","s":"S1","id":"5hgnY0mVcVetszbb85qeDg"},{"t":"3 Days","a":"Rhye","s":"S1","id":"5KytIKWqQJXb2T3RNOyi9G"},{"t":"Nice & Slow - Radio Version","a":"USHER","s":"S1","id":"5L0KDoZklMgs9GPoonneEl"},{"t":"Closer","a":"Nine Inch Nails","s":"S1","id":"5mc6EyF1OIEOhAkD0Gg9Lc"},{"t":"Just a Taste","a":"Square and Compass","s":"S1","id":"6byVTnlbWIuH57iALCrsvY"},{"t":"Pony","a":"Ginuwine","s":"S1","id":"6mz1fBdKATx6qP4oP1I65G"},{"t":"My Body","a":"LSG","s":"S1","id":"6PyLw3l6ndolBrTPQp3Ibm"},{"t":"I Wanna Be Adored - Remastered 2009","a":"The Stone Roses","s":"S1","id":"758wEKVqfYopJIHywdLVd4"},{"t":"Wicked Game","a":"Chris Isaak","s":"S1","id":"7w5AOd6HrDIHewHfpABEss"},{"t":"National Anthem","a":"Double Ferrari","s":"S1","id":"0cuJ6yA4ALjAWEfdp7I1E6"},{"t":"The Cascades","a":"Fleet Foxes","s":"S1","id":"0doAllpYP3hnusnTwFqmdG"},{"t":"A Walk","a":"Tycho","s":"S1","id":"0sQNqu37YQQSI3K0ueswyA"},{"t":"Clubbed to Death - Kurayamino Variation","a":"Rob Dougan","s":"S1","id":"0vSVDF2fHaxL2L9eEmRdAK"},{"t":"Sleep Walk","a":"Santo & Johnny","s":"S1","id":"0yK8sWD6cfrc7pGfaPIcZH"},{"t":"Cream On Chrome","a":"Ratatat","s":"S1","id":"0yzfkTH0QKIAYVeTex1NKJ"},{"t":"Just Like You Imagined","a":"Nine Inch Nails","s":"S1","id":"184ImITRjcX2h1awZ4WVT1"},{"t":"The Birth And Death Of The Day","a":"Explosions In The Sky","s":"S1","id":"1kuybxbGyHg58ELIkMeF9w"},{"t":"Avril 14th","a":"Aphex Twin","s":"S1","id":"1uaGSDFsLdReQgg8p7Obwh"},{"t":"Disco Science","a":"Mirwais","s":"S1","id":"2UqPmkNOAB1z3QzWwXYwkJ"},{"t":"Aerodynamic","a":"Daft Punk","s":"S1","id":"3H3cOQ6LBLSvmcaV7QkZEu"},{"t":"Incubation - 2010 Remaster","a":"Joy Division","s":"S1","id":"3M5BbGhVt5QssJsif7yOF2"},{"t":"Prelude","a":"Bonobo","s":"S1","id":"4cwDC2Yk2zqOp6NMX6v750"},{"t":"Laura Palmer's Theme","a":"Xiu Xiu","s":"S1","id":"4hVO0Oki2kdCoPajzN1Qpj"},{"t":"Flight to Neverland (From \"Hook\")","a":"John Williams, Boston Pops Orchestra","s":"S1","id":"4LmNNtdwFHLK6HJGC7KB3H"},{"t":"Danse Macabre, Op. 40, R.171","a":"Camille Saint-Saëns, Orchestre Symphonique de Montréal, Andrew Wan, Kent Nagano","s":"S1","id":"4PRnYCH5hoxypKVcOBvx3a"},{"t":"Your Hand In Mine - Remastered","a":"Explosions In The Sky","s":"S1","id":"4sYn64V9gqP6bpkOGw5B9k"},{"t":"In Motion","a":"Trent Reznor and Atticus Ross","s":"S1","id":"50CgC2wKmbWm4WLQKY87oP"},{"t":"4gn 4ever","a":"The Impossibles","s":"S1","id":"51Xb89ORjsFxqih8m4TPGH"},{"t":"On the Nature of Daylight","a":"Max Richter","s":"S1","id":"56oReVXIfUO9xkX7pHmEU0"},{"t":"East Hastings","a":"Godspeed You! Black Emperor","s":"S1","id":"5jMuXTa5hECm37P7C0mbIB"},{"t":"Gymnopédie No. 1","a":"Erik Satie, Philippe Entremont","s":"S1","id":"5NGtFXVpXSvwunEIGeviY3"},{"t":"two moons","a":"toe","s":"S1","id":"6qcUFIPZU2sJXiI1sqzwZG"},{"t":"Sandstorm","a":"Darude","s":"S1","id":"6Sy9BUbgFse0n0LPA5lwy5"},{"t":"Orchid - 2014 Remaster","a":"Black Sabbath","s":"S1","id":"7f5pVscGqWGPmzyAJ3thAI"},{"t":"Challengers: Match Point","a":"Trent Reznor and Atticus Ross","s":"S1","id":"7kSmQCEQHvSYrUUyPpAz8n"},{"t":"Scenario (feat. Busta Rhymes)","a":"A Tribe Called Quest, Busta Rhymes","s":"S1","id":"0301nLjG0ti26rx5ZmfqtP"},{"t":"Doo Wop (That Thing)","a":"Ms. Lauryn Hill","s":"S1","id":"0uEp9E98JB5awlA084uaIg"},{"t":"Front, Back & Side to Side","a":"UGK","s":"S1","id":"0z4Ryh7Qg9jKOQXzkUZLVK"},{"t":"C.R.E.A.M.","a":"Wu-Tang Clan","s":"S1","id":"119c93MHjrDLJTApCVGpvx"},{"t":"Gangsta's Paradise","a":"Coolio, L.V.","s":"S1","id":"1DIXPcTDzTj8ZMHt3PDt8p"},{"t":"Burbons And Lacs","a":"Master P, Silkk The Shocker","s":"S1","id":"1Xunvmk47Mju6oZlgzm2Ty"},{"t":"Funkdafied","a":"Da Brat","s":"S1","id":"29VrHhpC5AS9b7XJYDPhqb"},{"t":"Marinatin'","a":"Ras Kass","s":"S1","id":"2DAhV8tIVrwq1E76vy3Hv8"},{"t":"Knockin Pictures Off the Wall","a":"Yungstar","s":"S1","id":"2dbhHrMBb86QhCq4MVKmIT"},{"t":"It Was A Good Day","a":"Ice Cube","s":"S1","id":"2qOm7ukLyHUXWyR4ZWLwxA"},{"t":"Let Me Ride","a":"Dr. Dre, Snoop Dogg","s":"S1","id":"36yUCSB9OaMz0RMUQDOSpT"},{"t":"Pigs","a":"Cypress Hill","s":"S1","id":"3LRfVmbqK95xWUVxLzbvda"},{"t":"I Got 5 On It","a":"Luniz, Michael Marshall","s":"S1","id":"4IYKjN1DrYzxKXt0umJqsG"},{"t":"Can I Get A...","a":"JAY-Z, Amil, Ja Rule","s":"S1","id":"4LGMSdeKOUoy5Wf75Je0Hl"},{"t":"Tops Drop","a":"Fat Pat","s":"S1","id":"5oS8YDcBrOzRV3H437J9m5"},{"t":"Still Not a Player","a":"Big Pun, Joe","s":"S1","id":"5PG3h38oiQLEJlOuOvIs80"},{"t":"Just A Dog","a":"Big Moe","s":"S1","id":"5zBudVzkE9Lz5Yoh1TuKQ7"},{"t":"Jump Around","a":"House Of Pain","s":"S1","id":"6JymsaWDHk2Yj4e0yNBIFH"},{"t":"Wanna Be A Baller","a":"Lil' Troy","s":"S1","id":"6lEIjrQNwJPecJ7mMXjhjo"},{"t":"Back That Azz Up","a":"JUVENILE, Lil Wayne, Mannie Fresh","s":"S1","id":"6o2g1BJvtYQssH84kBYs7y"},{"t":"Dear Mama","a":"2Pac","s":"S1","id":"6tDxrq4FxEL2q15y37tXT9"},{"t":"This Is How We Do It","a":"Montell Jordan","s":"S1","id":"6uQKuonTU8VKBz5SHZuQXD"},{"t":"Damn It Feels Good to Be a Gangsta","a":"Geto Boys","s":"S1","id":"6yT2ASWIfmPAAiIe6YhIRC"},{"t":"Things Done Changed","a":"The Notorious B.I.G.","s":"S1","id":"7hdOchAKFm6FwzyevcQ56y"},{"t":"Regulate","a":"Warren G, Nate Dogg","s":"S1","id":"7nYvUtkQMx1v80S2FH2s9J"},{"t":"Knew It All Along","a":"Midtown","s":"S1","id":"0XGD00IvDySe8WCoZBQwYU"},{"t":"Green Eyes","a":"I Am The Avalanche","s":"S1","id":"1LhUhiXbYSWXi3oJrlSTyA"},{"t":"Letters To You","a":"Finch","s":"S1","id":"1lldOhIq1tf0XyQUBWDeOc"},{"t":"The Best Of Me","a":"The Starting Line","s":"S1","id":"1Up4RdOBpChNDytatxKDXP"},{"t":"Decode","a":"Paramore","s":"S1","id":"1ZLtE9tSJdaUiIJ9YoKHQe"},{"t":"All Around Me","a":"Flyleaf","s":"S1","id":"1zN6ynJG4PdR61YWv4PQ3Y"},{"t":"Natural Anthem - Remastered","a":"The Postal Service","s":"S1","id":"2dB5Th3ogSbEDLPyrl1Afj"},{"t":"Campfire Kansas","a":"The Get Up Kids","s":"S1","id":"2iN2f7TQO3Vw0BOJCOzshL"},{"t":"Anywhere With You","a":"Saves The Day","s":"S1","id":"2kYdLFMS0LulXRqhs0BTZm"},{"t":"Push Push","a":"Recover","s":"S1","id":"2N1cEuokq4tntRDBxU6Kb3"},{"t":"Sugar, We're Goin Down","a":"Fall Out Boy","s":"S1","id":"2TfSHkHiFO4gRztVIkggkE"},{"t":"In This Diary","a":"The Ataris","s":"S1","id":"3B9W8NK6FiaNZCZFIzLdwo"},{"t":"Firefly","a":"Saves The Day","s":"S1","id":"3d9hDbSHqDC6olcD8FxCZe"},{"t":"The Moon Is Down","a":"Further Seems Forever","s":"S1","id":"3DIm2iPXGWHacY6uFpNBGk"},{"t":"The D In Detroit","a":"The Anniversary","s":"S1","id":"3f4kmk93GRCqYYwVvmw38y"},{"t":"Song For Kelly Huckaby","a":"Death Cab for Cutie","s":"S1","id":"49w2M0sKZvIRaHNVW76TcZ"},{"t":"Again I Go Unnoticed","a":"Dashboard Confessional","s":"S1","id":"4gqxBoYV1wBNFko7AM8lik"},{"t":"My Friends Over You","a":"New Found Glory","s":"S1","id":"4pImG3RdbaGfanzQOTFgyr"},{"t":"Aside","a":"The Weakerthans","s":"S1","id":"4qUMAiRkCY92dw7wnj7phr"},{"t":"Ballgame","a":"Kevin Devine","s":"S1","id":"4scSZlxlDH3uIodfpQthdb"},{"t":"Play Crack The Sky","a":"Brand New","s":"S1","id":"4vuQtjTfG1IthmXXcv3TSD"},{"t":"23","a":"Jimmy Eat World","s":"S1","id":"59d33G8qJVS1pGkPEChguB"},{"t":"The Taste of Ink","a":"The Used","s":"S1","id":"5jZ1Z2GFTf2gwmFc3qiUxs"},{"t":"The Mountain Range In My Living Room","a":"The Early November","s":"S1","id":"6GWNDW8TXls6Vbr8L6P3oD"},{"t":"Cute Without The 'E'","a":"Taking Back Sunday","s":"S1","id":"6OyKBwLzq4h15XmxeWf5n4"},{"t":"I'm Not Okay (I Promise)","a":"My Chemical Romance","s":"S1","id":"7lRlq939cDG4SzWOF4VAnd"},{"t":"Head Over Heels","a":"Tears For Fears","s":"S1","id":"0aF9m87P8Tja3NUMv4DfHt"},{"t":"Emotions","a":"Mariah Carey","s":"S1","id":"0cELvuwJW1acISUHYB6suj"},{"t":"Movies","a":"Alien Ant Farm","s":"S1","id":"0DVxWV6V1nWa7Ml68Frd3D"},{"t":"Wait a Minute!","a":"WILLOW","s":"S1","id":"0y60itmpH0aPKsFiGxmtnh"},{"t":"Somebody's Watching Me","a":"Rockwell","s":"S1","id":"0yelVo6DA76GpFfBRPnK0j"},{"t":"Hell N Back (feat. Summer Walker)","a":"Bakar, Summer Walker","s":"S1","id":"0ZDwhNFZnPx9EIPCcwGUHC"},{"t":"Best to You","a":"Blood Orange, Empress Of","s":"S1","id":"1p2TWJxUlHE5JR0sE6E1d7"},{"t":"Hook","a":"Blues Traveler","s":"S1","id":"27IRo2rYeizhRMDaNVplNM"},{"t":"Waiting Room","a":"Ace Enders","s":"S1","id":"2DkSRhG0rthavHKMAMKa0a"},{"t":"What a Fool Believes","a":"The Doobie Brothers","s":"S1","id":"2yBVeksU2EtrPJbTu4ZslK"},{"t":"Paul Revere","a":"Beastie Boys","s":"S1","id":"3gKwVWwKmeuFtPubICbOGc"},{"t":"I'm On A Boat","a":"The Lonely Island, T-Pain","s":"S1","id":"3IQSYqnKsCTMLWn2xE3HFT"},{"t":"Only You","a":"Yazoo","s":"S1","id":"3mGwufkovVPrzsJaXWg8PU"},{"t":"Moon Song","a":"Phoebe Bridgers","s":"S1","id":"46RNrAkGsqWTDrv2ZPOAbx"},{"t":"I Want It That Way","a":"Backstreet Boys","s":"S1","id":"47BBI51FKFwOMlIiX6m8ya"},{"t":"Walking on Broken Glass","a":"Annie Lennox","s":"S1","id":"4CcSw8wQAHYf4XNckayPoc"},{"t":"Love My Way","a":"The Psychedelic Furs","s":"S1","id":"4dk40nfaQav6b4ZsJ9OYUo"},{"t":"Calling Out","a":"Sophie Lloyd, Dames Brown","s":"S1","id":"4g1gIVdxhAOMAhKqNWxdth"},{"t":"B2b","a":"Charli xcx","s":"S1","id":"4wTvw1dBiPXNiHTh0zzpcI"},{"t":"Illustrated Bible Stories For Children","a":"The Weakerthans","s":"S1","id":"4WvSyCSbePCZEUIZHYmkEs"},{"t":"Festival Song","a":"Jeff Rosenstock","s":"S1","id":"5P76l1d9jcA4NQFD6JXTp2"},{"t":"Sunspray","a":"Blackbird Blackbird","s":"S1","id":"5WRJ2J6Hq2pJr9yJYQoLPn"},{"t":"Stop Draggin' My Heart Around","a":"Stevie Nicks, Tom Petty","s":"S1","id":"66LhCsc06aTa2Ig7iYPDSP"},{"t":"Feel It Still","a":"Portugal. The Man","s":"S1","id":"6QgjcU0zLnzq5OrUoSZ3OK"},{"t":"brutal","a":"Olivia Rodrigo","s":"S1","id":"6SRsiMl7w1USE4mFqrOhHC"},{"t":"Wonderwall - Remastered","a":"Oasis","s":"S1","id":"7ygpwy2qP3NbrxVkHvUhXY"},{"t":"Sugar in the Tank","a":"Julien Baker, TORRES","s":"S1","id":"02DPSOj7dXlKBbKZ5BTSJj"},{"t":"Ease My Mind","a":"Chris Lake, Abel Balder","s":"S1","id":"04gs2fDnnjT6995ruR1qbk"},{"t":"Misery","a":"Winter, Horse Jumper of Love","s":"S1","id":"0kGpg2RuSoevcA16TN49Sw"},{"t":"Forever Is A Feeling","a":"Lucy Dacus","s":"S1","id":"0r1Hes7jhihnSh8ql9XGya"},{"t":"Dollar Store (feat. Waxahatchee)","a":"Ben Kweller, Waxahatchee","s":"S1","id":"117kyiqf9KdKL3KZAqgsXH"},{"t":"catch these fists","a":"Wet Leg","s":"S1","id":"11wHmDneCglIJZRMOMUhUw"},{"t":"Current Affairs","a":"Lorde","s":"S1","id":"1cQQB9z7fNQQ2VzSkslt7Y"},{"t":"Relationships","a":"HAIM","s":"S1","id":"1FlDLGaTsr9HH1zfJiq6is"},{"t":"Anxiety","a":"Doechii","s":"S1","id":"1musbempyJAw5gfSKZHXP9"},{"t":"Where I Lay","a":"Movements","s":"S1","id":"24Qin8f6WgJZG9TnS93G3J"},{"t":"BAILE INoLVIDABLE","a":"Bad Bunny","s":"S1","id":"2lTm559tuIvatlT1u0JYG2"},{"t":"The Subway","a":"Chappell Roan","s":"S1","id":"2SsY5k7UWFqgye3PUMG3Oq"},{"t":"Candy","a":"Claudia Valentina","s":"S1","id":"31tp6dG3by6hyHfICBsqG9"},{"t":"Back To Me","a":"The Marías","s":"S1","id":"4E0P1xs3JNmsNr5c5nFTZJ"},{"t":"Garden Of Eden","a":"Lady Gaga","s":"S1","id":"4mUR5Tv0CvJtpmnUtzeIgd"},{"t":"Hard","a":"Hayley Williams","s":"S1","id":"63IP8iDo4w34MsGMMSxroW"},{"t":"Loves","a":"Harrison Gordon","s":"S1","id":"66LxBYfjVkFZtgb7rtWqxH"},{"t":"WILD_","a":"Bay Ledges","s":"S1","id":"6CYR64DIyFVNSvdV7uCcQX"},{"t":"Heathen","a":"The Armed","s":"S1","id":"6KoASNvhpqoEJ7Mi2zM9q3"},{"t":"NEVER ENOUGH","a":"Turnstile","s":"S1","id":"6ONyZXRIEiZWWnAA1F5YvH"},{"t":"Day One","a":"Bon Iver, Dijon, Flock of Dimes","s":"S1","id":"6QJVQSuMC77psM4vgPo31D"},{"t":"Enything","a":"quickly, quickly","s":"S1","id":"6SRKENjMvaK28HSVPCLO4E"},{"t":"Black Rock","a":"Abrupt Decay","s":"S1","id":"71Ab00j31vHFxrcF59bie3"},{"t":"The Lure","a":"Johnny Dynamite","s":"S1","id":"7D1VCM1An6f8tEjgCbjX1h"},{"t":"Suicidal Thoughts","a":"The Notorious B.I.G.","s":"S1","id":"00t7QTffOR3SA3L1BvSQVq"},{"t":"Between the Bars","a":"Elliott Smith","s":"S1","id":"1JbUMtVkQuaAPdHOvncVTm"},{"t":"Fade Into You","a":"Mazzy Star","s":"S1","id":"1LzNfuep1bnAUR9skqdHCK"},{"t":"Something In The Way","a":"Nirvana","s":"S1","id":"1nFtiJxYdhtFfFtfXBv06s"},{"t":"What Once Was","a":"Her's","s":"S1","id":"1XrSjpNe49IiygZfzb74pk"},{"t":"Hurt","a":"Nine Inch Nails","s":"S1","id":"27tX58NOpv1YKQ0abW7EPy"},{"t":"Hurt","a":"Johnny Cash","s":"S1","id":"28cnXtME493VX9NOw9cIUh"},{"t":"Opera House","a":"Cigarettes After Sex","s":"S1","id":"2Ddfm2NQwTRsf7YVlt258S"},{"t":"What Sarah Said","a":"Death Cab for Cutie","s":"S1","id":"2JFrlsJBH4IDt3Suot97dP"},{"t":"Fast Car","a":"Tracy Chapman","s":"S1","id":"2M9ro2krNb7nr7HSprkEgo"},{"t":"Didn't Know What I Was In For","a":"Better Oblivion Community Center","s":"S1","id":"31nH2FO5og83YmI3K845Jn"},{"t":"The Drinks We Drank Last Night","a":"Azure Ray","s":"S1","id":"3NoNRT2L546gVJgrdhHvI8"},{"t":"I'm So Sad, So Very, Very, Sad","a":"Crash and the Boys","s":"S1","id":"3nwqTFSljgbk3zZWaLLkZ0"},{"t":"These Days","a":"Nico","s":"S1","id":"3uCkIqD0VzQUijbs8WIizs"},{"t":"Bed Abuse","a":"Owen","s":"S1","id":"4hHxoSGa585yQUtopfqkoH"},{"t":"I Need My Girl","a":"The National","s":"S1","id":"50M7nY1oQuNHecs0ahWAtI"},{"t":"What Kind of Love","a":"Childish Gambino","s":"S1","id":"5e7ZRnsm4RyLcinXHfXRIk"},{"t":"Scavenger Type","a":"NOFX","s":"S1","id":"5geT58aayKzvusx575xcaq"},{"t":"Losing Streak","a":"Jesu","s":"S1","id":"5I4qPZK3weA3RRWeA0DI3a"},{"t":"The Funeral","a":"Band of Horses","s":"S1","id":"5lRzWDEe7UuedU2QPsFg0K"},{"t":"Fourth of July","a":"Sufjan Stevens","s":"S1","id":"5Qnrgqy1pAm9GyNQOgyVFz"},{"t":"Let It Die","a":"Feist","s":"S1","id":"62pFpiU3Ipcxlwv7rcG3a1"},{"t":"I Can't Make You Love Me","a":"Bonnie Raitt","s":"S1","id":"69uJi5QsBtqlYkGURTBli8"},{"t":"Sour Girl","a":"Stone Temple Pilots","s":"S1","id":"6wNwHBUjsessjRioNVFbaO"},{"t":"Slow Car Crash","a":"Headphones","s":"S1","id":"71w2Ose4Zi9mqesG2L7xQD"},{"t":"Will Anybody Ever Love Me?","a":"Sufjan Stevens","s":"S1","id":"7IAx9OvToHkT8C4ZlX9hwe"},{"t":"Adounia","a":"Etran de L'AÏr","s":"S1","id":"0oF0943hvTFkA9oNyjedeV"},{"t":"Whatever Tomorrow - Soulwax Remix","a":"Chet Faker, Soulwax","s":"S1","id":"0OxUhPXDmT8KXM97s7SeRl"},{"t":"SGL","a":"Now, Now","s":"S1","id":"0qc4EOJHNO4dczQwDFCLcJ"},{"t":"Veto","a":"SOHN","s":"S1","id":"0VZwWcTjedfM5CoF9mV1yr"},{"t":"Politics, Music and Drugs","a":"Slowreader","s":"S1","id":"17vDKs25wo4MOPOEfoJFlV"},{"t":"Chihiro","a":"Gravagerz","s":"S1","id":"1kDqGWSeR27gWaMouyXD0C"},{"t":"Songs on the Stereo","a":"Carpenter","s":"S1","id":"1YHhderPo8f5LgPZ10Xef4"},{"t":"I Know","a":"Jude","s":"S1","id":"25PYKUQLCUKeczK0iTGuYL"},{"t":"Sad Sad City","a":"Ghostland Observatory","s":"S1","id":"26T7C1NMXKE7hCWhKH2l0o"},{"t":"Fire","a":"Waxahatchee","s":"S1","id":"2lBEWXP11gpEySIXgA5ALH"},{"t":"w/o u","a":"GEMS","s":"S1","id":"2VdnDp6ci5nGgH2poYT4g9"},{"t":"My Weakness","a":"Moby","s":"S1","id":"3GICsxgaaztTzDBJnd8MIk"},{"t":"Dizzy On the Comedown","a":"Turnover","s":"S1","id":"3vkj94FiLgUz3ysZcmIXPx"},{"t":"Doses & Mimosas","a":"Cherub","s":"S1","id":"44CZRkOxv7UItaAUmh8PgN"},{"t":"Banditos","a":"The Refreshments","s":"S1","id":"466QMr5bVL5dEjtGxgaXyC"},{"t":"Everything's Glitter","a":"The Armed","s":"S1","id":"4eoK4u1YTiu5NR32p4SPmL"},{"t":"oh my love","a":"FKA twigs","s":"S1","id":"5dEJc0rHuTVxtl1xljDbRv"},{"t":"Her Ladyship's Theme","a":"Trigg & Gusset","s":"S1","id":"5iaYUEWUv4A1hK2dDnO7ab"},{"t":"Elegance & You","a":"Korine","s":"S1","id":"5o4r1t4X3AaFeLyHxbaery"},{"t":"Always","a":"Erasure","s":"S1","id":"5QQCp4fQiU9I2FU9FvJVV2"},{"t":"Journal of Ardency","a":"Class Actress","s":"S1","id":"6GEIpzW14NtOjqHejbcSRE"},{"t":"Pussy Is God","a":"King Princess","s":"S1","id":"6VCeywT4JeawuZOUkQ1okx"},{"t":"tarot cards","a":"saturdays at your place","s":"S1","id":"6WDtRfpi7WzCMRWAwNoYCU"},{"t":"U Should Not Be Doing That","a":"Amyl and The Sniffers","s":"S1","id":"6zfVBdPDopmP36NeHd4O2m"},{"t":"Baby Blue (feat. Chance the Rapper)","a":"Action Bronson, Chance the Rapper","s":"S1","id":"7gDwRzJhLs0fFHaGtMDJVM"},{"t":"moody","a":"Royel Otis","s":"S1","id":"7MerIDn7wpEH4OEGbpasSH"},{"t":"What You Need","a":"INXS","s":"S2","id":"04EnF5C2HvYZfGu64Bng7I"},{"t":"Never Let Me Down Again","a":"Depeche Mode","s":"S2","id":"0ooy3NjwsJreceWYCxlfQt"},{"t":"#1 Crush","a":"Garbage","s":"S2","id":"0P6USuYzHP8GdAyNKLkTZi"},{"t":"The Heart Is a Lonely Hunter","a":"The Anniversary","s":"S2","id":"0vjvqKuqmSsU9YjmjnVm09"},{"t":"Nikes","a":"Frank Ocean","s":"S2","id":"19YKaevk2bce4odJkP5L22"},{"t":"2122","a":"Geese","s":"S2","id":"1VViOwNoUfimwsy3wlk7d8"},{"t":"Dig Me Out","a":"Sleater-Kinney","s":"S2","id":"1YdCuoPvDDVyHa3YomPb1B"},{"t":"Dance Yrself Clean","a":"LCD Soundsystem","s":"S2","id":"2cmRpmO04TLaKPzmAzySYZ"},{"t":"Age of Consent","a":"New Order","s":"S2","id":"2EEinN4Zk8MUv4OQuLsTBj"},{"t":"Sober","a":"Childish Gambino","s":"S2","id":"2VrkwoZrSpGG9I865zqZQi"},{"t":"Some Red-Handed Sleight of Hand","a":"Cursive","s":"S2","id":"2VZXxOYZy6nstzcUOlzBkK"},{"t":"Smoke Signals","a":"Phoebe Bridgers","s":"S2","id":"2zMjyH4hqFkTNjlqZWK3YL"},{"t":"At the Bottom of Everything","a":"Bright Eyes","s":"S2","id":"39Mzqwp2PBwMy61CVTuLDl"},{"t":"Never Too Much","a":"Luther Vandross","s":"S2","id":"3nFJbZCHP4d9vduKjJLdBL"},{"t":"Cherub Rock","a":"The Smashing Pumpkins","s":"S2","id":"3ow0TQVttXQF8rLckmXgRx"},{"t":"Halfway Home","a":"TV On The Radio","s":"S2","id":"3tB5g6nXxjl7UZO61S1FhA"},{"t":"At Your Funeral","a":"Saves The Day","s":"S2","id":"3UBDdFbJw8h0zLMaXGftE6"},{"t":"Time to Pretend","a":"MGMT","s":"S2","id":"4iG2gAwKXsOcijVaVXzRPW"},{"t":"The First Song","a":"Band of Horses","s":"S2","id":"4kxlUznSzzc8li5kPtdAug"},{"t":"Want","a":"The Cure","s":"S2","id":"4oFTz4lmtWtzURGJzWqdIX"},{"t":"Show Me Love","a":"Robin S","s":"S2","id":"4t0UsYzmmmZRMTWn77jiGF"},{"t":"Debaser","a":"Pixies","s":"S2","id":"5cy5IStIn7OSHDEIgXeDyq"},{"t":"Man Made of Meat","a":"Viagra Boys","s":"S2","id":"5gR6gTGOGsg9zcR7JhvwQz"},{"t":"Losing a Whole Year","a":"Third Eye Blind","s":"S2","id":"5lgOUdoMBB3eZuSmc5HL4r"},{"t":"Straight Outta Compton","a":"N.W.A.","s":"S2","id":"6KIKRz9eSTXdNsGUnomdtW"},{"t":"Never Meant","a":"American Football","s":"S2","id":"6kZqCqD1r08sJAQ1TjuEpM"},{"t":"Just Rock And Roll","a":"Midtown","s":"S2","id":"6PdqOsNrol4dof9PaIu8Br"},{"t":"Caring Is Creepy","a":"The Shins","s":"S2","id":"75s6YTfSfE2Ojbb9P44PV9"},{"t":"Holiday","a":"The Get Up Kids","s":"S2","id":"7BqOaCe91KO42CrBFkXPYe"},{"t":"We've Had Enough","a":"Alkaline Trio","s":"S2","id":"7HiVHdZfH5zK9pNttg9yX2"},{"t":"Tape Machine","a":"STRFKR","s":"S2","id":"7uiNap6KASasjY0lc4huND"},{"t":"Battery","a":"Metallica","s":"S2","id":"7wz8LNfmGZ3C0PwKW9LdDg"},{"t":"Go Do","a":"Jónsi","s":"S2","id":"06ivS38drtNuRCDIg2ww9k"},{"t":"Sorry","a":"Justin Bieber","s":"S2","id":"09CtPGIpYB4BrO8qb1RGsF"},{"t":"Tongue Tied","a":"GROUPLOVE","s":"S2","id":"0GO8y8jQk1PkHzS31d699N"},{"t":"TiK ToK","a":"Kesha","s":"S2","id":"0HPD5WQqrq7wPWR7P7Dw1i"},{"t":"Flawless Remix (feat. Nicki Minaj)","a":"Beyoncé, Nicki Minaj","s":"S2","id":"0zVMzJ37VQNFUNvdxxat2E"},{"t":"Lights","a":"Ellie Goulding","s":"S2","id":"11ozIUBoXAgRTVWelDn4pL"},{"t":"Past Lives","a":"BØRNS","s":"S2","id":"1Dr5JexwA15wmKe7Y7maA9"},{"t":"Confetti","a":"Cold Cave","s":"S2","id":"1JeLLdviGvhLvAXdz4QoX0"},{"t":"The Mother We Share","a":"CHVRCHES","s":"S2","id":"1OVypFlcraAhyvPqIMWDor"},{"t":"Gone","a":"Charli xcx, Christine and the Queens","s":"S2","id":"1yUJK3qxPiFiPeAG2gLfuW"},{"t":"Only Girl (In The World)","a":"Rihanna","s":"S2","id":"2ENexcMEMsYk0rVJigVD3i"},{"t":"Myth","a":"Beach House","s":"S2","id":"2NfxtzCIrpCmJX5Z2KMdD5"},{"t":"Till the World Ends","a":"Britney Spears","s":"S2","id":"38iU2jg98IZZEIJPrP7aWD"},{"t":"I'm So Humble","a":"The Lonely Island, Adam Levine","s":"S2","id":"39F08AoluLGQ9F1J2bO4Pn"},{"t":"Freaking Out the Neighborhood","a":"Mac DeMarco","s":"S2","id":"3HlK8txWAdtKMrbsqX40pl"},{"t":"Oblivion","a":"Grimes","s":"S2","id":"3LGsgpx4TfxhXbr07OFKqs"},{"t":"Dancing On My Own","a":"Robyn","s":"S2","id":"3Rc2ajBMInxeNGVkMPC92Y"},{"t":"Sleepyhead","a":"Passion Pit","s":"S2","id":"4prEPl61C8qZpeo3IkYSMl"},{"t":"Mirrors","a":"Justin Timberlake","s":"S2","id":"4rHZZAmHpZrA3iH5zx8frV"},{"t":"Seasons (Waiting on You)","a":"Future Islands","s":"S2","id":"522YBf6WqBwJVAe7oHLymu"},{"t":"Night by Night","a":"Chromeo","s":"S2","id":"5bgYTzUDzerRFN7fp86MkQ"},{"t":"Teenage Dream","a":"Katy Perry","s":"S2","id":"5jzKL4BDMClWqRguW5qZvh"},{"t":"Sometimes","a":"Miami Horror","s":"S2","id":"5nCbYXk2MHC8jA7SnAQUdX"},{"t":"Falling","a":"HAIM","s":"S2","id":"5wL742yBgvtbw1IibA3FMJ"},{"t":"Get Lucky","a":"Daft Punk, Pharrell Williams","s":"S2","id":"69kOkLUCkxIZYexIgSG8rq"},{"t":"Number One Fan","a":"MUNA","s":"S2","id":"69WAiCaEdxACKzB4B7Bv27"},{"t":"I Love It","a":"Icona Pop, Charli xcx","s":"S2","id":"6HZ9VeI5IRFCNQLXhpF4bq"},{"t":"Five Seconds","a":"Twin Shadow","s":"S2","id":"6PGToxtt6KrZztJe6j66in"},{"t":"Elephant","a":"Tame Impala","s":"S2","id":"6qZjm61s6u8Ead9sWxCDro"},{"t":"Born This Way","a":"Lady Gaga","s":"S2","id":"6r2BECwMgEoRb5yLfp0Hca"},{"t":"Some Nights","a":"fun.","s":"S2","id":"6t6oULCRS6hnI7rm0h5gwl"},{"t":"Closer To You","a":"Clairo","s":"S2","id":"7C1SjpflVsxWhKHF3TCIdG"},{"t":"Hinnom, TX","a":"Bon Iver","s":"S2","id":"07JjtrTqsBg6hE0xoAU1xZ"},{"t":"Introducing Palace Players","a":"Mew","s":"S2","id":"0M5us163XfQ48lAWIRKX1P"},{"t":"The Sound of Settling","a":"Death Cab for Cutie","s":"S2","id":"0PTYTZvNNtlvdOwWRYrbfC"},{"t":"Black Sabbath","a":"Black Sabbath","s":"S2","id":"0xIZPPBfLqQEAj1BLmGrNc"},{"t":"Riders on the Storm","a":"The Doors","s":"S2","id":"14XWXWv5FoCbFzLksawpEe"},{"t":"Reaper","a":"No Vacation","s":"S2","id":"1FoqHncUcfaNWB6lSHuabQ"},{"t":"Only Happy When It Rains","a":"Garbage","s":"S2","id":"1IsGA5ceSC4a5nxgAEYnQd"},{"t":"Fade Into You","a":"Mazzy Star","s":"S2","id":"1LzNfuep1bnAUR9skqdHCK"},{"t":"No Ordinary Love","a":"Sade","s":"S2","id":"1oaaSrDJimABpOdCEbw2DJ"},{"t":"After The Storm","a":"Kali Uchis, Tyler, The Creator","s":"S2","id":"1otG6j1WHNvl9WgXLWkHTo"},{"t":"Limousine","a":"Brand New","s":"S2","id":"1PExhawz0iaufZ7Ux5FBGJ"},{"t":"Heavy","a":"The Marías","s":"S2","id":"1ShRHPAiiIrh0arZbSFmx1"},{"t":"circle the drain","a":"Soccer Mommy","s":"S2","id":"2drtd6SptpMJ1KylMQ7mrE"},{"t":"6 Underground","a":"Sneaker Pimps","s":"S2","id":"2n6gQZqhqMURh5MXcqDIh6"},{"t":"The Rain (Supa Dupa Fly)","a":"Missy Elliott","s":"S2","id":"2WRzpLD8qDRrxMXc63E5WJ"},{"t":"Rain","a":"The Cult","s":"S2","id":"3Od5XBElZqm5N6rr86LS5r"},{"t":"Let Go","a":"Frou Frou","s":"S2","id":"3xKTpGCsafXzV4muM1Hpl3"},{"t":"Ironic","a":"Alanis Morissette","s":"S2","id":"4oGTdOClZUxcM2H3UmXlwL"},{"t":"Cheerleader","a":"St. Vincent","s":"S2","id":"4SUVGUZp37ZCEJKkrqfwgd"},{"t":"Perfect Day","a":"Lou Reed","s":"S2","id":"4TOMI010Sd4ZAX4aZ5TS85"},{"t":"Futile Devices","a":"Sufjan Stevens","s":"S2","id":"4Zts9erRexAxILn5XjSwUN"},{"t":"Baby Says","a":"The Kills","s":"S2","id":"52kCx3YrlbnmKMIt5DEnNk"},{"t":"Tiny Raindrop","a":"Balance And Composure","s":"S2","id":"5tvgcfeDFKP94xaFFVZdrX"},{"t":"Breakdown (feat. Bone Thugs)","a":"Mariah Carey, Bone Thugs-N-Harmony","s":"S2","id":"5XK0dMccjLSG1oVrEzN6Fz"},{"t":"Mind Idea","a":"Jeremy Enigk","s":"S2","id":"675qT5ZF2jBPFyge8uAFdn"},{"t":"I Think Ur A Contra","a":"Vampire Weekend","s":"S2","id":"68PE0YDpmT84jQ0bXw1OPc"},{"t":"I Will Always","a":"The Cranberries","s":"S2","id":"6E0FVyivgSyE7C9Z5HMOrX"},{"t":"Playground Love","a":"Air, Gordon Tracks","s":"S2","id":"6L5RI9isQPvFyl1yCxnFFb"},{"t":"Tom's Diner","a":"Suzanne Vega, DNA","s":"S2","id":"7f9sC9fvtjYSZYOLSmKJlq"},{"t":"White Gloves","a":"Khruangbin","s":"S2","id":"7g18n5nxV5ep8ugBR3BmHD"},{"t":"Cry Me a River","a":"Justin Timberlake","s":"S2","id":"7Lf7oSEVdzZqTA0kEDSlS5"},{"t":"Rain King","a":"Counting Crows","s":"S2","id":"7s4JCyY8YIZSsKvtwStBQ6"},{"t":"Deflector","a":"Touché Amoré","s":"S2","id":"0D3H3kRQdHCNrEXBDtJsyU"},{"t":"I Know The End","a":"Phoebe Bridgers","s":"S2","id":"0pJW1Xw3aY4Eh6k5iuBkfI"},{"t":"champagne problems","a":"Taylor Swift","s":"S2","id":"0sY6ZUTh4yoctD8VIXz339"},{"t":"Kawasaki Backflip","a":"Dogleg","s":"S2","id":"0yKg9SbwFfhvlMAZ1TX6rj"},{"t":"JU$T","a":"Run The Jewels, Pharrell Williams, Zack De La Rocha","s":"S2","id":"10vS4ZLi4XWlIsNXSQXgqh"},{"t":"Under The Table","a":"Fiona Apple","s":"S2","id":"12WhIX6MvI93bS3wPSStSY"},{"t":"Stunnin'","a":"Curtis Waters, Harm Franklin","s":"S2","id":"1AZlrB115OgwTVA948JiTI"},{"t":"Good News","a":"Mac Miller","s":"S2","id":"1DWZUa5Mzf2BwzpHtgbHPY"},{"t":"Radio","a":"Freak Slug","s":"S2","id":"1gyIYA98zceKTnjISviYRz"},{"t":"Mount Everest","a":"Labrinth","s":"S2","id":"1ZdhOMWyFR8Iv9eylMGYg2"},{"t":"Disco","a":"Surf Curse","s":"S2","id":"2Lumsra3kuU61wXkEKzKaK"},{"t":"Pedestal","a":"Phantogram","s":"S2","id":"2sE8dFhRTmNKPn398XcrmX"},{"t":"Oxidate","a":"Brother.","s":"S2","id":"2UpVUjYyxCiVfILvGx95NK"},{"t":"Say So","a":"Doja Cat","s":"S2","id":"3Dv1eDb0MEgF93GpLXlucZ"},{"t":"Montana","a":"Slow Pulp","s":"S2","id":"3hcmDRD8Nz9aX9TqDMUy4b"},{"t":"Breathe Deeper","a":"Tame Impala","s":"S2","id":"3LbZIhU0smEU5SUnxod4j4"},{"t":"Welcome to The Internet","a":"Bo Burnham","s":"S2","id":"3s44Qv8x974tm0ueLexMWN"},{"t":"My Shot","a":"Lin-Manuel Miranda, Original Broadway Cast of Hamilton","s":"S2","id":"4cxvludVmQxryrnx1m9FqL"},{"t":"WAP","a":"Cardi B, Megan Thee Stallion","s":"S2","id":"4Oun2ylbjFKMPTiaSbbCih"},{"t":"Only For A Moment","a":"Lola Marsh","s":"S2","id":"4TSUh9GIzjlt9QAH32ObaB"},{"t":"Wildfires","a":"SAULT","s":"S2","id":"4Tzw9IdZbVyzmpWrvsGaNX"},{"t":"Doctor Whomst","a":"Origami Angel","s":"S2","id":"4udlZkMAIyKsx4PZefD4Yb"},{"t":"Take It Easy","a":"Eagles","s":"S2","id":"4yugZvBYaoREkJKtbG08Qr"},{"t":"The Difference","a":"Flume, Toro y Moi","s":"S2","id":"5kJ4BWZ9Y1qFIwwTbMIxYX"},{"t":"Savage Remix (feat. Beyoncé)","a":"Megan Thee Stallion, Beyoncé","s":"S2","id":"5v4GgrXPMghOnBBLmveLac"},{"t":"Step into You","a":"Hum","s":"S2","id":"6CJEsReQ6bC8DAPTSrAWO7"},{"t":"Sorry","a":"beabadoobee","s":"S2","id":"6U2tdXbNc2MLcgSTvDrb5L"},{"t":"Boy","a":"Ra Ra Riot","s":"S2","id":"6y3wFB95BBd1BMZ1pYWmfa"},{"t":"Think About Things","a":"Daði Freyr","s":"S2","id":"77yGu0p7APK39lotu7CLk5"},{"t":"Kings & Queens","a":"Ava Max","s":"S2","id":"7a53HqqArd4b9NF4XAmlbI"},{"t":"feel something","a":"Bea Miller","s":"S2","id":"7JDWhC422Gtk1Bq0mL3OTC"},{"t":"Moments / Tides","a":"Goth Babe","s":"S2","id":"7zyHy1NrAgkzPA55PDiIzU"},{"t":"New Halloween","a":"Touché Amoré","s":"S2","id":"02YbvgsXapCh9MLTrU11Ts"},{"t":"The Killing Moon","a":"Echo & the Bunnymen","s":"S2","id":"0cOf4csnt4DeXSkFmBjULw"},{"t":"Nightcall","a":"Kavinsky","s":"S2","id":"0U0ldCRmgCqhVvD6ksG63j"},{"t":"Burn Your Village","a":"Kiki Rockwell","s":"S2","id":"16Ggpcwd7ZxTveNBNN4GWT"},{"t":"Black Magic","a":"Magic Wands","s":"S2","id":"1b5d8HYUNnZs5ILTfkXuK5"},{"t":"Hearing Damage","a":"Thom Yorke","s":"S2","id":"1fTtPH0xGwFOXM5VlkxOX1"},{"t":"Lucretia My Reflection","a":"Sisters of Mercy","s":"S2","id":"1FyfPd5AMMjrorTdu3wASG"},{"t":"Black Halloween","a":"WARFIELD","s":"S2","id":"2cO5jj3F4KK7mHsk47FRTq"},{"t":"Bats in the Woods","a":"Johnny Dynamite","s":"S2","id":"2KvHgFa3BMw1rrCBKUiCVy"},{"t":"Thriller","a":"Michael Jackson","s":"S2","id":"2LlQb7Uoj1kKyGhlkBf9aC"},{"t":"Climbing Up the Walls","a":"Radiohead","s":"S2","id":"2PDQReEXBViVwkrbQ34vd7"},{"t":"Genesis","a":"Grimes","s":"S2","id":"3cjvqsvvU80g7WJPMVh8iq"},{"t":"Car Chase Terror!","a":"M83","s":"S2","id":"3w8MPlI4v5T1egQKhMSiny"},{"t":"Posed to Death","a":"The Faint","s":"S2","id":"3XHFgkCaJN3ctzOAI7UNuQ"},{"t":"Is This Real?","a":"lisahall","s":"S2","id":"3y5iS5K4WmAxyef2bcCSAM"},{"t":"Westfall","a":"Okkervil River","s":"S2","id":"45uW2Ev9c3iUUtpO5yQEOw"},{"t":"Bitches Brew","a":"✝✝✝ (Crosses)","s":"S2","id":"4E23uX1BDdUTk9x56nEbla"},{"t":"Devil Town","a":"Bright Eyes","s":"S2","id":"4eJ6pWefeAQjpMKTY6bwXV"},{"t":"Mind Playing Tricks on Me","a":"Geto Boys","s":"S2","id":"4j3sD1EcYquM2ltqNH19ec"},{"t":"Tyler","a":"Toadies","s":"S2","id":"4ti5I6Wxmj8CNpAxVHKohx"},{"t":"Bad Things","a":"Jace Everett","s":"S2","id":"4VIDVd87GQcBSbofvDp8Pj"},{"t":"In The Room Where You Sleep","a":"Dead Man's Bones","s":"S2","id":"63ped7sDHMOrqMFMBCTPw5"},{"t":"The Window","a":"The Black Dahlia Murder","s":"S2","id":"6fGOyGmAjpbWb6XSQsmBsQ"},{"t":"Totalimmortal","a":"AFI","s":"S2","id":"6k7Xz7Z0E1dfkKXtFAyKan"},{"t":"Season of the Witch","a":"Donovan","s":"S2","id":"6MOEQCtAWNSCmvg3SFKF5y"},{"t":"Black No. 1","a":"Type O Negative","s":"S2","id":"710B9xFjNOisQtKtppZE9p"},{"t":"The Original Theme from Blade","a":"Dan Zamani, The Pump Panel","s":"S2","id":"7cfH4PBHP8bNKpfmIrXgLD"},{"t":"Psycho Killer","a":"Talking Heads","s":"S2","id":"7dSCxR4LqkmxoBrq9MzVSD"},{"t":"Dracula's Castle","a":"New Order","s":"S2","id":"7LtjhMNZ7Y4bmY2u1iUhtj"},{"t":"Small Skeletal","a":"Crime In Stereo","s":"S2","id":"7ufD6zAEzFPP6YfVQhRqje"},{"t":"Tuck Me In","a":"Alkaline Trio","s":"S2","id":"7vnDViX8cX3Weihhs0PzQ8"},{"t":"Phantom","a":"Vestron Vulture","s":"S2","id":"7vvultYHYCuFk0AJWa5c9O"},{"t":"Supersonic","a":"Oasis","s":"S2","id":"01Ox3uPKBqENtiWNlVaRdD"},{"t":"Soda Pop","a":"Saja Boys, Andrew Choi","s":"S2","id":"02sy7FAs8dkDNYsHp4Ul3f"},{"t":"Back In Black","a":"AC/DC","s":"S2","id":"08mG3Y1vljYA6bvDt4Wqkj"},{"t":"Crown On the Ground","a":"Sleigh Bells","s":"S2","id":"0euDcsQmWbjM0AtsckB8HU"},{"t":"Bulls On Parade","a":"Rage Against The Machine","s":"S2","id":"0tZ3mElWcr74OOhKEiNz1x"},{"t":"No Problem","a":"Chance the Rapper, Lil Wayne, 2 Chainz","s":"S2","id":"0v9Wz8o0BT8DU38R4ddjeH"},{"t":"NSFW","a":"bbno$","s":"S2","id":"15KkQmwZhilaeahH0TYdeS"},{"t":"Heads Will Roll","a":"Yeah Yeah Yeahs","s":"S2","id":"18oWEPapjNt32E6sCM6VLb"},{"t":"3 Way","a":"Pretty Girls Make Graves","s":"S2","id":"1ekal54QotMDCQeeMNEwiD"},{"t":"Woman","a":"Kesha, The Dap-Kings Horns","s":"S2","id":"1kJtfldK9F7XmsSiSNlbth"},{"t":"Pump Up The Jam","a":"Technotronic","s":"S2","id":"21qnJAMtzC6S5SESuqQLEK"},{"t":"Techno Syndrome (Mortal Kombat)","a":"The Immortals","s":"S2","id":"2hTx8adLNJBwhLsavI1Xvr"},{"t":"Milionària","a":"ROSALÍA","s":"S2","id":"2K3bjojp1sCLdMMoO5lJ2p"},{"t":"The Hills Have Eyes","a":"The Acacia Strain","s":"S2","id":"2RQ1qY3GkhpMPfEEWqNImF"},{"t":"New Noise","a":"Refused","s":"S2","id":"35iLpqqQg4KrfYAzbvN1vH"},{"t":"The Final Countdown","a":"Europe","s":"S2","id":"3MrRksHupTVEQ7YbA0FsZK"},{"t":"Here Comes the Hotstepper","a":"iNi Kamoze","s":"S2","id":"3QRM0qZB7oMYavveH0iEqx"},{"t":"Ace of Spades","a":"Motörhead","s":"S2","id":"3vwnRdiNuhB6pYNXhiYeOh"},{"t":"B.O.B. - Bombs Over Baghdad","a":"Outkast","s":"S2","id":"3WibbMr6canxRJXhNtAvLU"},{"t":"Hola' Hovito","a":"JAY-Z","s":"S2","id":"3YNm3yDaCqAxLQLR8CHpof"},{"t":"Da Rockwilder","a":"Method Man, Redman","s":"S2","id":"4anqYZt4APNlFwQixpbdZR"},{"t":"Milkshake","a":"Kelis","s":"S2","id":"4LmzPJDil70LpiApWfOI6O"},{"t":"Return of the Tres","a":"Delinquent Habits","s":"S2","id":"4XYsx8ga3fGwEFOOcauPZC"},{"t":"Girls Just Want to Have Fun","a":"Cyndi Lauper","s":"S2","id":"4y1LsJpmMti1PfRQV9AWWe"},{"t":"Where Eagles Dare","a":"Misfits, Glenn Danzig","s":"S2","id":"5LgiqEgpK54OfXC6947wbU"},{"t":"Thot Shit","a":"Megan Thee Stallion","s":"S2","id":"5zNW5ARjYhJQJz1AChP33n"},{"t":"Simon Says","a":"Pharoahe Monch","s":"S2","id":"62l1ZGNoUlJlVwhwMKu2T6"},{"t":"Violet","a":"Hole","s":"S2","id":"6CHENx8iqzMwavTIz8s0gm"},{"t":"Hypnotize","a":"The Notorious B.I.G.","s":"S2","id":"6Tsu3OsuMz4KEGKbOYd6A0"},{"t":"Cherry Bomb","a":"The Runaways","s":"S2","id":"7cdnq45E9aP2XDStHg5vd7"},{"t":"Texas","a":"BigXthaPlug","s":"S2","id":"7j7ud2oFTJ8BjmeI8bjkQm"},{"t":"Can't C Me","a":"2Pac","s":"S2","id":"7rUchbZxrhF29Q0vYjKEU0"},{"t":"Bless the Telephone","a":"Labi Siffre","s":"S2","id":"0620OecAlwJQxWieRW4L9s"},{"t":"No Machine","a":"Adrianne Lenker","s":"S2","id":"07LZPF6LzXu19GhVyqWF81"},{"t":"First Day of My Life","a":"Bright Eyes","s":"S2","id":"0eBryM7ePQH3Klt3jz8xZd"},{"t":"I'll Catch You","a":"The Get Up Kids","s":"S2","id":"0eHunlm4FFLVOsIY2BPJ8H"},{"t":"With Arms Outstretched","a":"Rilo Kiley","s":"S2","id":"0EKUJ4OqrNWaHpNPODNTaf"},{"t":"Ladies and gentlemen we are floating in space","a":"Spiritualized","s":"S2","id":"0fOjUafaAhJV16oRBgCtz7"},{"t":"Finally","a":"CeCe Peniston","s":"S2","id":"0uqvSVhGgQTIdj9G51vhvv"},{"t":"Video Games","a":"Lana Del Rey","s":"S2","id":"24jvD83UgLmrdGjhWTFslY"},{"t":"Do You Realize??","a":"The Flaming Lips","s":"S2","id":"2DFRFqWNahKtFD112H2iEZ"},{"t":"I'll Be There For You / You're All I Need","a":"Method Man, Mary J. Blige","s":"S2","id":"2k431Ect1b8BW0oTvHEU5R"},{"t":"Turning Page","a":"Sleeping At Last","s":"S2","id":"2kfGoV9a5dbSKCNmUWH2ZF"},{"t":"Question","a":"Old 97's","s":"S2","id":"2m5ItG3IIMsaGYJjZOvUoE"},{"t":"Unchained Melody","a":"The Righteous Brothers","s":"S2","id":"2qhASBzpbFhPRtrnZ5lLnz"},{"t":"Tonight, Tonight - Strings Alone Mix","a":"The Smashing Pumpkins","s":"S2","id":"2RV7txGGF5WqFYz9epbmMu"},{"t":"Desperado","a":"Eagles","s":"S2","id":"2TjnCxxQRYn56Ye8gkUKiW"},{"t":"Shooting Star","a":"Poison","s":"S2","id":"36jWnfxwX5TS9PyZqYj2RM"},{"t":"Love Song","a":"Lesley Duncan","s":"S2","id":"3S5G3SQAGKmgH8AYvMTNLy"},{"t":"Angels","a":"The xx","s":"S2","id":"3zsRP8rH1kaIAo9fmiP4El"},{"t":"Thicker Than Water","a":"H2O","s":"S2","id":"48IKFWcA2BsDSa2uQqSxPI"},{"t":"Bright Whites","a":"Kishi Bashi","s":"S2","id":"4OP0Wb8yB9na6c4GtDT6ej"},{"t":"Real Love","a":"Regina Spektor","s":"S2","id":"4sQfUBzqyKYALy103CsJ8d"},{"t":"Your Hand In Mine - Remastered","a":"Explosions In The Sky","s":"S2","id":"4sYn64V9gqP6bpkOGw5B9k"},{"t":"All My Life","a":"K-Ci & JoJo","s":"S2","id":"5GorFaKkP2mLREQvhSblIg"},{"t":"You Can Have It All","a":"Yo La Tengo","s":"S2","id":"5s91S8hSrJXqYdhwHOEioV"},{"t":"Heartbeats","a":"José González","s":"S2","id":"5YqpHuXpFjDVZ7tY1ClFll"},{"t":"Concerning Hobbits","a":"Howard Shore","s":"S2","id":"644es5aYPJghtZLjM1rmSP"},{"t":"For Me This Is Heaven","a":"Jimmy Eat World","s":"S2","id":"64Kk49W8HFh22diWSBVxCr"},{"t":"Kiss of Life","a":"Sade","s":"S2","id":"65krtHkaYLPr0mEbjL61UP"},{"t":"The Moon Song","a":"Karen O, Ezra Koenig","s":"S2","id":"6E0YEPzjMvUymYOvmDIgp4"},{"t":"Love You For A Long Time","a":"Maggie Rogers","s":"S2","id":"6QTPacyXkZWG9FMwq6L1hJ"},{"t":"Angel in the Snow","a":"Elliott Smith","s":"S2","id":"7Cy8GDa9fgMatoRGFIKjg9"},{"t":"Angela","a":"The Lumineers","s":"S2","id":"0dV2XGlA08rObQZdL4mPOK"},{"t":"Knockin - Single Version","a":"MJ Lenderman","s":"S2","id":"0ll3IRoSlJ461DTxW4Z7vc"},{"t":"Stick Season","a":"Noah Kahan","s":"S2","id":"0mflMxspEfB0VbI1kyLiAv"},{"t":"I Lied to You","a":"Miles Caton, Sinners Movie","s":"S2","id":"0XfwXFXOI7oys9rsZ2sjrt"},{"t":"Piss up a Rope","a":"Ween","s":"S2","id":"0YHhpW8PnU0WNuAKAVuM70"},{"t":"BETTER HELL (Thicc boi)","a":"Bilmuri","s":"S2","id":"0ZTMohAj0uQlpRcl8a6SHD"},{"t":"From Here To L.A.","a":"The Early November","s":"S2","id":"16dvwMuLk5vGNj8uGNhlom"},{"t":"Chosen to Deserve","a":"Wednesday","s":"S2","id":"1c2meJL1RaGILGSw9Lnj0P"},{"t":"Hold On","a":"Alabama Shakes","s":"S2","id":"1EuvOdyyzhFUP2z3gfr6xz"},{"t":"Ghetto Cowboy","a":"Mo Thugs, Layzie Bone","s":"S2","id":"1ig7ym81PO34a90stVFtaf"},{"t":"Heart of the Continent","a":"John K. Samson","s":"S2","id":"1RwhqapZ0XuqDDeSY4Tzbu"},{"t":"Gone for Good","a":"The Shins","s":"S2","id":"1tJEdsmqcWGSRDM9uU4a67"},{"t":"Crowbar","a":"Waxahatchee","s":"S2","id":"1uy1GgGTNRvSP3961dRH5p"},{"t":"Souvenir","a":"boygenius, Julien Baker, Phoebe Bridgers, Lucy Dacus","s":"S2","id":"21JL0gpeAYgbSUmzhgSPJz"},{"t":"Golly Sandra","a":"Eisley","s":"S2","id":"2yl1iUFl022nSOWQXUxKOi"},{"t":"Old Town Road (feat. Billy Ray Cyrus)","a":"Lil Nas X, Billy Ray Cyrus","s":"S2","id":"2YpeDb67231RjR0MgVLzsG"},{"t":":)","a":"The Japanese House","s":"S2","id":"36YY9Yeq3XastTeC1e0VmN"},{"t":"Slowpoke","a":"Crosby, Stills, Nash & Young","s":"S2","id":"4BoEkyrekQzY1oEehWT2S7"},{"t":"snake","a":"Sadurn","s":"S2","id":"4K5pGnA0uiDLtipuoUbtPp"},{"t":"Wild Horses","a":"The Rolling Stones","s":"S2","id":"4M4Q3JLsUbyTkd5WHty1WB"},{"t":"Benediction","a":"The Weakerthans","s":"S2","id":"4tjCwfQn4bUOcU5iUow6sU"},{"t":"A Horse with No Name","a":"America","s":"S2","id":"54eZmuggBFJbV7k248bTTt"},{"t":"Dig","a":"Steel Train","s":"S2","id":"59OSZl55grA1Qu6bm2OPPq"},{"t":"Better Than Gold","a":"Justin Hawkes","s":"S2","id":"5cxskQNZLSxEkEhqdi5ad6"},{"t":"The Giver","a":"Chappell Roan","s":"S2","id":"5xHgo5JN0wfsV41HnRaos5"},{"t":"Pour Me A Drink","a":"Post Malone, Blake Shelton","s":"S2","id":"5ZLL6wYXeqg0k35ZkDRfhZ"},{"t":"Hot Piss","a":"The Yellow River Boys","s":"S2","id":"6GPxOWuhKyx3xYz7Co9pLm"},{"t":"My Baby","a":"Japanese Breakfast","s":"S2","id":"6P0bG1wDbLvs8kNJV4hQUt"},{"t":"Cheatin'","a":"Gin Blossoms","s":"S2","id":"7DS56f9W7t3N99lUegHcK0"},{"t":"Beg Steal or Borrow","a":"Ray LaMontagne","s":"S2","id":"7fMYBrlKl9mkcMTUGT4j6l"},{"t":"Satin In A Coffin","a":"Modest Mouse","s":"S2","id":"7fOuxQj8nxxYTK8jgEhWua"},{"t":"Wicked Game","a":"Midland","s":"S2","id":"7hQ9bSd1lU9yQkykhkKsMs"},{"t":"Happy New Year","a":"Let's Eat Grandma","s":"S2","id":"0BnepvoveEw7fJIpuwdLT4"},{"t":"Friend","a":"Can't Swim","s":"S2","id":"0ER8uC5KVDD8lTAxeeWBzI"},{"t":"Best Friends (feat. Aaliyah)","a":"Missy Elliott, Aaliyah","s":"S2","id":"0hq4njfuLWfjlfinVFCXhA"},{"t":"Me and Julio Down by the Schoolyard","a":"Me First and the Gimme Gimmes","s":"S2","id":"0KGr1YuoGsLL1mZV0DK8go"},{"t":"Knuck If You Buck","a":"Crime Mob, Lil Scrappy","s":"S2","id":"0RZXNlGPvfMo54fd6uCvAT"},{"t":"Me and Michael","a":"MGMT","s":"S2","id":"0t4z0WaQomQqPONghWn8c2"},{"t":"24 Hr Drive-Thru","a":"Origami Angel","s":"S2","id":"0ZwS03v4euiMztP9xDLgoO"},{"t":"We're Going to Be Friends","a":"The White Stripes","s":"S2","id":"13lZDbwonGhOflQLQIfdtZ"},{"t":"Daniel","a":"Elton John","s":"S2","id":"1BvJmtaXsqtH438BcDPeBb"},{"t":"Safely","a":"Hot Rod Circuit","s":"S2","id":"1DqZHq5tfsPOfoq4GbjmIJ"},{"t":"Grrrls","a":"Lizzo","s":"S2","id":"1iV2uSjP8BfHTXVLblBOxI"},{"t":"Wannabe","a":"Spice Girls","s":"S2","id":"1Je1IMUlBXcx1Fz0WE7oPT"},{"t":"Joga","a":"Björk","s":"S2","id":"20ZvzoDSefcZo6bj10jgGC"},{"t":"Best Friend (feat. Doja Cat)","a":"Saweetie, Doja Cat","s":"S2","id":"2etHQJxIbV0soyPhelVs9Y"},{"t":"With A Little Help From My Friends","a":"The Beatles","s":"S2","id":"2RnPATK99oGOZygnD2GTO6"},{"t":"The Golden Girls","a":"TV Themes","s":"S2","id":"34xKolWzMv1B94UuZwxcTd"},{"t":"Young Forever","a":"JAY-Z, Mr Hudson","s":"S2","id":"35srNkJVToAzYiZzron1FY"},{"t":"Rollin' With My Homies","a":"Coolio","s":"S2","id":"3qTiTZJJDM3gZ8TFiMMr0j"},{"t":"T.L.C. (TURNSTILE LOVE CONNECTION)","a":"Turnstile","s":"S2","id":"3zQpWQCDm9QMDaAhe4ggoO"},{"t":"Not Tonight","a":"Lil' Kim, Angie Martinez","s":"S2","id":"42OhQBFNIbMyxRGxyPOvQA"},{"t":"Shoulder to the Wheel","a":"Saves The Day","s":"S2","id":"4dKu1HkVL1xh96F1JfDTrn"},{"t":"fuck, i luv my friends","a":"renforshort","s":"S2","id":"4hk4plGoAmg3naYTq8EUul"},{"t":"The Brews","a":"NOFX","s":"S2","id":"4khRfibu32AGybm3FmGzk0"},{"t":"Me & My Friends","a":"Kevin Devine","s":"S2","id":"4KjTyBIzwxN1l4AIj23PxX"},{"t":"Best Friend","a":"SOFI TUKKER, NERVO, The Knocks","s":"S2","id":"4NCcEcogAZM6LgIptOpY2d"},{"t":"I'll Be Your Mirror","a":"The Velvet Underground, Nico","s":"S2","id":"4PINSJIlBWsnVeveicq1S8"},{"t":"Like A Friend","a":"Pulp","s":"S2","id":"4z80Wk5401Bt5MA9MZU5NW"},{"t":"There's No 'I' In Team","a":"Taking Back Sunday","s":"S2","id":"5GDhZIimrLEJAgV7zVshSG"},{"t":"1979","a":"The Smashing Pumpkins","s":"S2","id":"5QLHGv0DfpeXLNFo7SFEy1"},{"t":"ARE WE STILL FRIENDS?","a":"Tyler, The Creator","s":"S2","id":"5TxRUOsGeWeRl3xOML59Ai"},{"t":"Lean on Me","a":"Bill Withers","s":"S2","id":"5zCJvrT3C7cIfHsR5iG95l"},{"t":"Bros","a":"Wolf Alice","s":"S2","id":"6NunWZuZ6g9KipJ9Q5Vck7"},{"t":"Stainless","a":"Alex Vile","s":"S2","id":"0AKYcUujWisXMgKrl0pCKt"},{"t":"New Old Tape","a":"Lucius","s":"S2","id":"0ewbW2KOQvgNr2CMDQY7kS"},{"t":"Faded Fight","a":"Chain Wallet","s":"S2","id":"0FPXouxD42wlYMdJXRWzG4"},{"t":"Fear and Friday's","a":"Zach Bryan","s":"S2","id":"0GMiRrUnQuoGddKMsxGPIZ"},{"t":"Sleep Walk","a":"Santo & Johnny","s":"S2","id":"0yK8sWD6cfrc7pGfaPIcZH"},{"t":"The Vanishing","a":"Home Front","s":"S2","id":"1AEtboafOGPtfo29iHUs2a"},{"t":"Ojos Tristes","a":"Selena Gomez, benny blanco, The Marías","s":"S2","id":"1DpC4L3JjsGRW7y6eTHaMj"},{"t":"im going to heaven with or without you","a":"The Paper Chase","s":"S2","id":"1gwzmFRPT19I8GOpblDcn9"},{"t":"What You Need","a":"Jay Som, Soft Glas","s":"S2","id":"1oABrgkUeG6UEtaBcCBqKn"},{"t":"Feel Right","a":"Mark Ronson, Mystikal","s":"S2","id":"2ENBaEOC0Jgi2au9Jt7y7d"},{"t":"The Great Commandment","a":"Camouflage","s":"S2","id":"2hUINMzSnrhcqpdcWiY0oa"},{"t":"Ben Franklin","a":"Snail Mail","s":"S2","id":"2S55DmUzdp1n67Y0x0CuoT"},{"t":"Dad Rock","a":"TRSH","s":"S2","id":"3cIIShiUZ4wC6D14nmf81P"},{"t":"All I Ever Asked","a":"Rachel Chinouriri, sombr","s":"S2","id":"3h1SACNX5U6CytntiBHEZn"},{"t":"Irgendwie, irgendwo, irgendwann","a":"Nena","s":"S2","id":"3Wloia3unakmhFRBFhHFsg"},{"t":"So Alright, Cool, Whatever","a":"The Happy Fits","s":"S2","id":"47rOmlKHPYyMDM3h6L74Sn"},{"t":"Starchild","a":"Sweet Pill","s":"S2","id":"4mU5lCYnFfvBngGywNqQgo"},{"t":"Scottie Spliffen","a":"Dikembe","s":"S2","id":"4n5r6GNLPRrxRenIjUlQP4"},{"t":"Heathcliff","a":"Snocaps, Waxahatchee","s":"S2","id":"4Q5Tw8eOylSLI9DvYrbQoO"},{"t":"Eugene","a":"Arlo Parks","s":"S2","id":"4S6PolgPZ5OLph314ww8Fg"},{"t":"Emptylands","a":"Blood Cultures","s":"S2","id":"4VBvVq4hA0qI9mmJptNBSm"},{"t":"Keep Time","a":"Gauntlet Hair","s":"S2","id":"54J6lD3ernPP6AmlFXUMDZ"},{"t":"Are You Bored Yet?","a":"Wallows, Clairo","s":"S2","id":"57RA3JGafJm5zRtKJiKPIm"},{"t":"Losing Streak","a":"Jesu","s":"S2","id":"5I4qPZK3weA3RRWeA0DI3a"},{"t":"The Bitterest Pill","a":"+/-","s":"S2","id":"5S5VVAFOVY1K3Pb4rpuirl"},{"t":"Daylight","a":"Twelve Point Buck","s":"S2","id":"60nNQDq8xIpVNIM48OMhdV"},{"t":"Connection","a":"Télépopmusik, Young & Sick","s":"S2","id":"6fQXKsu03AMPYwtiVIFZ63"},{"t":"LOSTANDFOUND","a":"Brother., Goldmyth","s":"S2","id":"6mqhmXpVtIKFZnWqCbn8Su"},{"t":"Pussy Palace","a":"Lily Allen","s":"S2","id":"73vfMXcXa6iY1E3lpf2fZO"},{"t":"Blushin","a":"Arlo, Emi Grace","s":"S2","id":"79R3LZQwzADpbkPslBWlEp"},{"t":"Running Up That Hill","a":"MEG MYERS","s":"S2","id":"7zLeOgBrdrCfMf47MCyLMC"}];
+
+// Dedup by Spotify ID
+const seen = new Set();
+const UNIQUE_SONGS = SONGS.filter(s => {
+  if (seen.has(s.id)) return false;
+  seen.add(s.id);
+  return true;
+});
+
+// Stats
+const s1 = UNIQUE_SONGS.filter(s => s.s === 'S1').length;
+const s2 = UNIQUE_SONGS.filter(s => s.s === 'S2').length;
+document.getElementById('totalCount').textContent = UNIQUE_SONGS.length;
+document.getElementById('s1Count').textContent = s1;
+document.getElementById('s2Count').textContent = s2;
+
+// Search
+const input = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearBtn');
+const resultsArea = document.getElementById('resultsArea');
+
+function normalize(str) {
+  if (!str) return '';
+  return str.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function highlight(text, query) {
+  if (!query || !text) return text || '';
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(new RegExp(`(${escaped})`, 'gi'), '<span class="match-highlight">$1</span>');
+}
+
+function search(query) {
+  const q = normalize(query);
+  if (!q) return null;
+
+  const words = q.split(' ').filter(Boolean);
+  const scored = [];
+
+  for (const song of UNIQUE_SONGS) {
+    const titleN = normalize(song.t);
+    const artistN = normalize(song.a);
+    const combined = titleN + ' ' + artistN;
+
+    let score = 0;
+
+    // Exact title match
+    if (titleN === q) score += 100;
+    // Title starts with query
+    else if (titleN.startsWith(q)) score += 80;
+    // Title contains full query
+    else if (titleN.includes(q)) score += 60;
+
+    // Artist exact
+    if (artistN === q) score += 50;
+    else if (artistN.includes(q)) score += 30;
+
+    // Word matches
+    let wordMatchCount = 0;
+    for (const w of words) {
+      if (combined.includes(w)) wordMatchCount++;
+    }
+    score += (wordMatchCount / words.length) * 40;
+
+    if (score > 5) scored.push({ song, score });
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, 20).map(x => x.song);
+}
+
+function renderResults(query) {
+  const results = search(query);
+
+  if (!results) {
+    resultsArea.innerHTML = `
+      <div class="empty-state">
+        <span class="big-icon">🎵</span>
+        <h3>Start typing to search</h3>
+        <p>We'll check both Season 1 and Season 2 submissions instantly.</p>
+      </div>`;
+    return;
+  }
+
+  if (results.length === 0) {
+    resultsArea.innerHTML = `
+      <div class="no-results">
+        <div class="safe-message">
+          <div class="safe-icon">✅</div>
+          <h3>Not found in the archive</h3>
+          <p>No submission matches "${query}" across S1 or S2. Looks like it's fair game.</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Check for likely dupes (same spotify ID or very close title/artist)
+  const topResult = results[0];
+  const isDuplicate = normalize(topResult.t).includes(normalize(query)) || normalize(topResult.a).includes(normalize(query));
+
+  let html = `<div class="results-header">${results.length} result${results.length !== 1 ? 's' : ''} found</div>`;
+
+  if (results.length > 0) {
+    html += `<div class="duplicate-warning">⚠️ This song or artist has been submitted before — check below before you pick it.</div>`;
+  }
+
+  for (const song of results) {
+    const spotifyUrl = `https://open.spotify.com/track/${song.id}`;
+    const highlightedTitle = highlight(song.t, query);
+    const highlightedArtist = highlight(song.a, query);
+    html += `
+      <div class="result-card" onclick="window.open('${spotifyUrl}', '_blank')">
+        <div class="result-thumb">🎵</div>
+        <div class="result-info">
+          <div class="result-title">${highlightedTitle}</div>
+          <div class="result-artist">${highlightedArtist}</div>
+        </div>
+        <span class="season-badge badge-${song.s}">${song.s}</span>
+      </div>`;
+  }
+
+  resultsArea.innerHTML = html;
+}
+
+input.addEventListener('input', () => {
+  const q = input.value.trim();
+  clearBtn.classList.toggle('visible', q.length > 0);
+  renderResults(q || null);
+});
+
+clearBtn.addEventListener('click', () => {
+  input.value = '';
+  clearBtn.classList.remove('visible');
+  renderResults(null);
+  input.focus();
+});
+
+// Browse all
+let currentFilter = 'all';
+
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-tab').forEach(b => {
+    b.className = 'filter-tab';
+  });
+  if (filter === 'all') btn.classList.add('active-all');
+  else if (filter === 'S1') btn.classList.add('active-s1');
+  else btn.classList.add('active-s2');
+  renderBrowse();
+}
+
+function renderBrowse() {
+  const filtered = currentFilter === 'all'
+    ? [...UNIQUE_SONGS]
+    : UNIQUE_SONGS.filter(s => s.s === currentFilter);
+
+  filtered.sort((a, b) => a.t.localeCompare(b.t));
+
+  const list = document.getElementById('songList');
+  list.innerHTML = filtered.map(song => `
+    <div class="song-row" onclick="window.open('https://open.spotify.com/track/${song.id}', '_blank')" style="cursor:pointer">
+      <span class="season-badge badge-${song.s}">${song.s}</span>
+      <span class="song-row-title">${song.t}</span>
+      <span class="song-row-artist">${song.a}</span>
+    </div>
+  `).join('');
+}
+
+renderBrowse();
+</script>
+</body>
+</html>
