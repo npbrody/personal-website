@@ -2317,7 +2317,7 @@
             const rect = canvas.getBoundingClientRect();
             const touchX = touch.clientX - rect.left;
             const touchY = touch.clientY - rect.top;
-            
+
             // Check if touching a node
             let touchedNode = null;
             for (const node of nodes) {
@@ -2328,16 +2328,27 @@
                     break;
                 }
             }
-            
+
             if (touchedNode) {
+                // Show info panel when tapping a node
+                showInfo(touchedNode);
+
                 if (focusedNode === touchedNode) {
                     clearFocus();
                 } else {
                     setFocus(touchedNode);
                 }
-            } else if (focusedNode) {
-                clearFocus();
-            } else if (touchedNode) {
+            } else {
+                // Hide info panel when tapping outside nodes
+                info.classList.remove('visible');
+
+                if (focusedNode) {
+                    clearFocus();
+                }
+            }
+
+            // Store touch position for potential dragging
+            if (touchedNode) {
                 draggedNode = touchedNode;
                 touchedNode.dragging = true;
                 touchStartX = touchX;
@@ -2354,10 +2365,15 @@
                 const rect = canvas.getBoundingClientRect();
                 const touchX = touch.clientX - rect.left;
                 const touchY = touch.clientY - rect.top;
-                
+
                 const deltaX = touchX - touchStartX;
                 const deltaY = touchY - touchStartY;
-                
+
+                // If user has moved significantly, hide info panel (they're dragging)
+                if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                    info.classList.remove('visible');
+                }
+
                 draggedNode.x = touchStartNodeX + deltaX;
                 draggedNode.y = touchStartNodeY + deltaY;
                 draggedNode.vx = 0;
