@@ -294,8 +294,14 @@
                 left: 10px;
                 max-width: none;
                 font-size: 13px;
-                max-height: 40vh;
+                max-height: 50vh;
                 overflow-y: auto;
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            }
+
+            /* Prevent info panel from being dismissed while scrolling it */
+            #info * {
+                pointer-events: auto;
             }
 
             #info h3 {
@@ -2388,6 +2394,20 @@
                 draggedNode = null;
             }
         }, { passive: false });
+
+        // Prevent info panel touches from dismissing it or affecting canvas
+        const info = document.getElementById('info');
+        info.addEventListener('touchstart', (e) => {
+            e.stopPropagation(); // Prevent canvas from handling this touch
+        }, { passive: true });
+
+        info.addEventListener('touchmove', (e) => {
+            e.stopPropagation(); // Allow scrolling within info panel
+        }, { passive: true });
+
+        info.addEventListener('touchend', (e) => {
+            e.stopPropagation(); // Prevent canvas from handling this touch
+        }, { passive: true });
 
         animate();
     </script>
