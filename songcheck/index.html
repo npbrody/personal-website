@@ -146,6 +146,59 @@
   .clear-btn:hover { color: var(--text); }
   .clear-btn.visible { display: flex; }
 
+  .search-options {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    padding-left: 4px;
+  }
+
+  .exact-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .exact-toggle input[type="checkbox"] { display: none; }
+
+  .toggle-track {
+    width: 36px;
+    height: 20px;
+    background: var(--border);
+    border-radius: 10px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .exact-toggle input:checked + .toggle-track {
+    background: var(--accent);
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+
+  .exact-toggle input:checked + .toggle-track .toggle-thumb {
+    transform: translateX(16px);
+  }
+
+  .toggle-label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .exact-toggle:hover .toggle-label { color: var(--text); }
+
   /* Results */
   .results-area {
     width: 100%;
@@ -439,6 +492,126 @@
     letter-spacing: 0.08em;
     text-align: center;
   }
+
+  .artist-freq {
+    width: 100%;
+    max-width: 580px;
+    margin-top: 64px;
+  }
+
+  .freq-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .freq-note {
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    color: #444;
+    text-transform: uppercase;
+  }
+
+  .freq-legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .freq-leg-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .freq-leg-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    opacity: 0.6;
+  }
+
+
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .freq-row {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+  }
+
+  .freq-rank {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: #333;
+    text-align: right;
+  }
+
+  .freq-bar-wrap {
+    position: relative;
+    height: 28px;
+    background: var(--surface);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .freq-segs {
+    display: flex;
+    height: 100%;
+    width: 100%;
+  }
+
+  .freq-seg {
+    height: 100%;
+    opacity: 0.35;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+  }
+
+  .freq-bar-wrap:hover .freq-seg {
+    opacity: 0.6;
+  }
+
+  .freq-name {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100% - 40px);
+  }
+
+  .freq-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 700;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -461,6 +634,13 @@
     <span class="search-icon">♫</span>
     <input type="text" id="searchInput" placeholder="Search by song title or artist…" autocomplete="off" spellcheck="false">
     <button class="clear-btn" id="clearBtn" aria-label="Clear search">✕</button>
+  </div>
+  <div class="search-options">
+    <label class="exact-toggle">
+      <input type="checkbox" id="exactMatch">
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      <span class="toggle-label">Exact matches only</span>
+    </label>
   </div>
 </div>
 
@@ -486,6 +666,16 @@
   </div>
   <div class="song-list" id="songList"></div>
 </div>
+
+<section class="artist-freq">
+  <h2 class="freq-title">Most Submitted Artists <span class="freq-note">all seasons combined</span></h2>
+  <div class="freq-legend">
+    <span class="freq-leg-item"><span class="freq-leg-swatch" style="background:#f2a244"></span>S1</span>
+    <span class="freq-leg-item"><span class="freq-leg-swatch" style="background:#44c8f2"></span>S2</span>
+    <span class="freq-leg-item"><span class="freq-leg-swatch" style="background:#b44cf2"></span>S3</span>
+  </div>
+  <div class="freq-list" id="freqList"></div>
+</section>
 
 <footer>766 submissions · Seasons 1, 2 &amp; 3</footer>
 
@@ -516,7 +706,13 @@ const resultsArea = document.getElementById('resultsArea');
 
 function normalize(str) {
   if (!str) return '';
-  return str.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function highlight(text, query) {
@@ -529,6 +725,7 @@ function search(query) {
   const q = normalize(query);
   if (!q) return null;
 
+  const exactOnly = document.getElementById('exactMatch').checked;
   const words = q.split(' ').filter(Boolean);
   const scored = [];
 
@@ -539,23 +736,30 @@ function search(query) {
 
     let score = 0;
 
-    // Exact title match
-    if (titleN === q) score += 100;
-    // Title starts with query
-    else if (titleN.startsWith(q)) score += 80;
-    // Title contains full query
-    else if (titleN.includes(q)) score += 60;
+    if (exactOnly) {
+      // Match if title exactly equals query, or if query exactly matches any individual artist
+      if (titleN === q) score += 100;
+      const artistList = song.a.split(',').map(a => normalize(a.trim()));
+      if (artistList.some(a => a === q)) score += 50;
+    } else {
+      // Exact title match
+      if (titleN === q) score += 100;
+      // Title starts with query
+      else if (titleN.startsWith(q)) score += 80;
+      // Title contains full query
+      else if (titleN.includes(q)) score += 60;
 
-    // Artist exact
-    if (artistN === q) score += 50;
-    else if (artistN.includes(q)) score += 30;
+      // Artist exact
+      if (artistN === q) score += 50;
+      else if (artistN.includes(q)) score += 30;
 
-    // Word matches
-    let wordMatchCount = 0;
-    for (const w of words) {
-      if (combined.includes(w)) wordMatchCount++;
+      // Word matches
+      let wordMatchCount = 0;
+      for (const w of words) {
+        if (combined.includes(w)) wordMatchCount++;
+      }
+      score += (wordMatchCount / words.length) * 40;
     }
-    score += (wordMatchCount / words.length) * 40;
 
     if (score > 5) scored.push({ song, score });
   }
@@ -623,6 +827,11 @@ input.addEventListener('input', () => {
   renderResults(q || null);
 });
 
+document.getElementById('exactMatch').addEventListener('change', () => {
+  const q = input.value.trim();
+  if (q) renderResults(q);
+});
+
 clearBtn.addEventListener('click', () => {
   input.value = '';
   clearBtn.classList.remove('visible');
@@ -663,6 +872,32 @@ function renderBrowse() {
 }
 
 renderBrowse();
+
+// Artist frequency list — stacked bars by season
+const ARTIST_FREQ = [{"name":"The Smashing Pumpkins","S1":1,"S2":3,"S3":2,"total":6},{"name":"Charli xcx","S1":2,"S2":2,"S3":1,"total":5},{"name":"Phoebe Bridgers","S1":2,"S2":3,"S3":0,"total":5},{"name":"Snoop Dogg","S1":4,"S2":0,"S3":0,"total":4},{"name":"NOFX","S1":2,"S2":1,"S3":1,"total":4},{"name":"JAŸ-Z","S1":1,"S2":2,"S3":1,"total":4},{"name":"Saves The Day","S1":2,"S2":2,"S3":0,"total":4},{"name":"Waxahatchee","S1":2,"S2":2,"S3":0,"total":4},{"name":"Lana Del Rey","S1":1,"S2":1,"S3":1,"total":3},{"name":"Deftones","S1":1,"S2":0,"S3":2,"total":3},{"name":"Sublime","S1":1,"S2":0,"S3":2,"total":3},{"name":"Sade","S1":1,"S2":2,"S3":0,"total":3},{"name":"Ratatat","S1":2,"S2":0,"S3":1,"total":3},{"name":"Oasis","S1":2,"S2":1,"S3":0,"total":3},{"name":"Frank Ocean","S1":1,"S2":1,"S3":1,"total":3},{"name":"Lil Wayne","S1":2,"S2":1,"S3":0,"total":3},{"name":"Beyoncé","S1":1,"S2":2,"S3":0,"total":3},{"name":"Nine Inch Nails","S1":3,"S2":0,"S3":0,"total":3},{"name":"Explosions In The Sky","S1":2,"S2":1,"S3":0,"total":3},{"name":"Trent Reznor and Atticus Ross","S1":2,"S2":0,"S3":1,"total":3},{"name":"Black Sabbath","S1":1,"S2":1,"S3":1,"total":3},{"name":"The Notorious B.I.G.","S1":2,"S2":1,"S3":0,"total":3},{"name":"The Get Up Kids","S1":1,"S2":2,"S3":0,"total":3},{"name":"Death Cab for Cutie","S1":2,"S2":1,"S3":0,"total":3},{"name":"The Weakerthans","S1":2,"S2":1,"S3":0,"total":3},{"name":"Jimmy Eat World","S1":1,"S2":1,"S3":1,"total":3},{"name":"Mariah Carey","S1":1,"S2":1,"S3":1,"total":3},{"name":"Julien Baker","S1":1,"S2":1,"S3":1,"total":3},{"name":"The Marías","S1":1,"S2":2,"S3":0,"total":3},{"name":"Lady Gaga","S1":1,"S2":1,"S3":1,"total":3},{"name":"Elliott Smith","S1":1,"S2":1,"S3":1,"total":3},{"name":"Childish Gambino","S1":1,"S2":1,"S3":1,"total":3},{"name":"Sufjan Stevens","S1":2,"S2":1,"S3":0,"total":3},{"name":"Garbage","S1":0,"S2":2,"S3":1,"total":3},{"name":"New Order","S1":0,"S2":2,"S3":1,"total":3},{"name":"Bright Eyes","S1":0,"S2":3,"S3":0,"total":3},{"name":"MGMT","S1":0,"S2":2,"S3":1,"total":3},{"name":"The Shins","S1":0,"S2":2,"S3":1,"total":3},{"name":"Pharrell Williams","S1":0,"S2":2,"S3":1,"total":3},{"name":"Clairo","S1":0,"S2":2,"S3":1,"total":3},{"name":"Missy Elliott","S1":0,"S2":3,"S3":0,"total":3},{"name":"Megan Thee Stallion","S1":0,"S2":3,"S3":0,"total":3},{"name":"Sweet Pill","S1":1,"S2":1,"S3":0,"total":2},{"name":"Royel Otis","S1":2,"S2":0,"S3":0,"total":2},{"name":"Snail Mail","S1":1,"S2":1,"S3":0,"total":2},{"name":"CHVRCHES","S1":1,"S2":1,"S3":0,"total":2},{"name":"Paramore","S1":2,"S2":0,"S3":0,"total":2},{"name":"Me First and the Gimme Gimmes","S1":1,"S2":1,"S3":0,"total":2},{"name":"The Postal Service","S1":2,"S2":0,"S3":0,"total":2},{"name":"Wednesday","S1":1,"S2":1,"S3":0,"total":2},{"name":"Mark Ronson","S1":1,"S2":1,"S3":0,"total":2},{"name":"Beastie Boys","S1":2,"S2":0,"S3":0,"total":2},{"name":"Lit","S1":1,"S2":0,"S3":1,"total":2},{"name":"Kendrick Lamar","S1":1,"S2":0,"S3":1,"total":2},{"name":"Khruangbin","S1":1,"S2":1,"S3":0,"total":2},{"name":"Zero 7","S1":1,"S2":0,"S3":1,"total":2},{"name":"Santo & Johnny","S1":1,"S2":1,"S3":0,"total":2},{"name":"Daft Punk","S1":1,"S2":1,"S3":0,"total":2},{"name":"Coolio","S1":1,"S2":1,"S3":0,"total":2},{"name":"Da Brat","S1":1,"S2":1,"S3":0,"total":2},{"name":"Big Moe","S1":1,"S2":0,"S3":1,"total":2},{"name":"2Pac","S1":1,"S2":1,"S3":0,"total":2},{"name":"Geto Boys","S1":1,"S2":1,"S3":0,"total":2},{"name":"Midtown","S1":1,"S2":1,"S3":0,"total":2},{"name":"The Anniversary","S1":1,"S2":1,"S3":0,"total":2},{"name":"Kevin Devine","S1":1,"S2":1,"S3":0,"total":2},{"name":"Brand New","S1":1,"S2":1,"S3":0,"total":2},{"name":"The Early November","S1":1,"S2":1,"S3":0,"total":2},{"name":"Taking Back Sunday","S1":1,"S2":1,"S3":0,"total":2},{"name":"Tears For Fears","S1":1,"S2":0,"S3":1,"total":2},{"name":"The Lonely Island","S1":1,"S2":1,"S3":0,"total":2},{"name":"Lucy Dacus","S1":1,"S2":1,"S3":0,"total":2},{"name":"Ben Kweller","S1":1,"S2":0,"S3":1,"total":2},{"name":"Lorde","S1":1,"S2":0,"S3":1,"total":2},{"name":"HAIM","S1":1,"S2":1,"S3":0,"total":2},{"name":"Chappell Roan","S1":1,"S2":1,"S3":0,"total":2},{"name":"The Armed","S1":2,"S2":0,"S3":0,"total":2},{"name":"Turnstile","S1":1,"S2":1,"S3":0,"total":2},{"name":"Bon Iver","S1":1,"S2":1,"S3":0,"total":2},{"name":"quickly","S1":2,"S2":0,"S3":0,"total":2},{"name":"Johnny Dynamite","S1":1,"S2":1,"S3":0,"total":2},{"name":"Mazzy Star","S1":1,"S2":1,"S3":0,"total":2},{"name":"Nirvana","S1":1,"S2":0,"S3":1,"total":2},{"name":"Nico","S1":1,"S2":1,"S3":0,"total":2},{"name":"Jesu","S1":1,"S2":1,"S3":0,"total":2},{"name":"Band of Horses","S1":1,"S2":1,"S3":0,"total":2},{"name":"Stone Temple Pilots","S1":1,"S2":0,"S3":1,"total":2},{"name":"Now, Now","S1":2,"S2":0,"S3":0,"total":2},{"name":"Chance the Rapper","S1":1,"S2":1,"S3":0,"total":2},{"name":"INXS","S1":0,"S2":1,"S3":1,"total":2},{"name":"Depeche Mode","S1":0,"S2":1,"S3":1,"total":2},{"name":"The Cure","S1":0,"S2":1,"S3":1,"total":2},{"name":"Pixies","S1":0,"S2":1,"S3":1,"total":2},{"name":"Alkaline Trio","S1":0,"S2":2,"S3":0,"total":2},{"name":"STRFKR","S1":0,"S2":1,"S3":1,"total":2},{"name":"Kesha","S1":0,"S2":2,"S3":0,"total":2},{"name":"Rihanna","S1":0,"S2":1,"S3":1,"total":2},{"name":"Beach House","S1":0,"S2":1,"S3":1,"total":2},{"name":"Grimes","S1":0,"S2":2,"S3":0,"total":2},{"name":"Justin Timberlake","S1":0,"S2":2,"S3":0,"total":2},{"name":"Tame Impala","S1":0,"S2":2,"S3":0,"total":2},{"name":"Soccer Mommy","S1":0,"S2":1,"S3":1,"total":2},{"name":"Alanis Morissette","S1":0,"S2":1,"S3":1,"total":2},{"name":"Bone Thugs-N-Harmony","S1":0,"S2":1,"S3":1,"total":2},{"name":"The Cranberries","S1":0,"S2":1,"S3":1,"total":2},{"name":"Air","S1":0,"S2":1,"S3":1,"total":2},{"name":"Touché Amoré","S1":0,"S2":2,"S3":0,"total":2},{"name":"Fiona Apple","S1":0,"S2":1,"S3":1,"total":2},{"name":"Brother.","S1":0,"S2":2,"S3":0,"total":2},{"name":"Doja Cat","S1":0,"S2":2,"S3":0,"total":2},{"name":"Origami Angel","S1":0,"S2":2,"S3":0,"total":2},{"name":"Eagles","S1":0,"S2":2,"S3":0,"total":2},{"name":"Radiohead","S1":0,"S2":1,"S3":1,"total":2},{"name":"Toadies","S1":0,"S2":1,"S3":1,"total":2},{"name":"The Black Dahlia Murder","S1":0,"S2":1,"S3":1,"total":2},{"name":"Type O Negative","S1":0,"S2":1,"S3":1,"total":2},{"name":"KPop Demon Hunters Cast","S1":0,"S2":2,"S3":0,"total":2},{"name":"Sleigh Bells","S1":0,"S2":1,"S3":1,"total":2},{"name":"Yeah Yeah Yeahs","S1":0,"S2":1,"S3":1,"total":2},{"name":"Method Man","S1":0,"S2":2,"S3":0,"total":2},{"name":"Misfits","S1":0,"S2":1,"S3":1,"total":2},{"name":"Regina Spektor","S1":0,"S2":1,"S3":1,"total":2},{"name":"Lil Nas X","S1":0,"S2":1,"S3":1,"total":2},{"name":"Japanese Breakfast","S1":0,"S2":1,"S3":1,"total":2},{"name":"Elton John","S1":0,"S2":1,"S3":1,"total":2},{"name":"The Beatles","S1":0,"S2":1,"S3":1,"total":2},{"name":"Tyler, The Creator","S1":0,"S2":1,"S3":1,"total":2},{"name":"David Bowie","S1":0,"S2":0,"S3":2,"total":2},{"name":"Kid Cudi","S1":0,"S2":0,"S3":2,"total":2}];
+
+const maxCount = ARTIST_FREQ[0].total;
+const freqList = document.getElementById('freqList');
+
+// Season colors matching the site's existing badge palette
+const S_COLOR = { S1: '#f2a244', S2: '#44c8f2', S3: '#b44cf2' };
+
+freqList.innerHTML = ARTIST_FREQ.map((d, i) => {
+  const pct = (n) => (n / maxCount * 100).toFixed(2) + '%';
+  const segments = ['S1','S2','S3']
+    .filter(s => d[s] > 0)
+    .map(s => `<div class="freq-seg" style="width:${pct(d[s])};background:${S_COLOR[s]}" title="${s}: ${d[s]}"></div>`)
+    .join('');
+  return `
+    <div class="freq-row">
+      <span class="freq-rank">${i + 1}</span>
+      <div class="freq-bar-wrap">
+        <div class="freq-segs">${segments}</div>
+        <span class="freq-name">${d.name}</span>
+      </div>
+      <span class="freq-count">${d.total}</span>
+    </div>`;
+}).join('');
 </script>
 </body>
 </html>
