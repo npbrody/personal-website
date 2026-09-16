@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Social Media Mindsets Quiz</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+</head>
+<body>
+<div id="smms-quiz-root"></div>
+
+<script type="text/babel">
+const { useState } = React;
+
+const AlertCircle = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="12" y1="8" x2="12" y2="12"></line>
+    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+  </svg>
+);
+
+const TrendingUp = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+    <polyline points="17 6 23 6 23 12"></polyline>
+  </svg>
+);
+
+const TrendingDown = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+    <polyline points="17 18 23 18 23 12"></polyline>
+  </svg>
+);
+
+const Minus = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12"></line>
+  </svg>
+);
+
+const Users = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+    <circle cx="9" cy="7" r="4"></circle>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+  </svg>
+);
+
+const SMMSQuiz = () => {
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [showResults, setShowResults] = useState(false);
+  const [phase, setPhase] = useState('mindset');
+
+  const studyMeans = {
+    agency: 3.27,
+    valence: 3.31
+  };
+
+  const mindsetQuestions = [
+    { id: 1, text: "Using social media is meaningful for me.", scale: "valence", reverse: false },
+    { id: 2, text: "Using social media is a waste of time for me.", scale: "valence", reverse: true },
+    { id: 3, text: "Using social media is fun and enjoyable for me.", scale: "valence", reverse: false },
+    { id: 4, text: "Using social media strengthens and supports my relationships.", scale: "valence", reverse: false },
+    { id: 5, text: "Using social media facilitates my learning and growth.", scale: "valence", reverse: false },
+    { id: 6, text: "Using social media lets me do what I want.", scale: "valence", reverse: false },
+    { id: 7, text: "Social media is a helpful tool that I use.", scale: "valence", reverse: false },
+    { id: 8, text: "I'm good at managing the ways I use social media.", scale: "agency", reverse: false },
+    { id: 9, text: "I'm in control of how I use social media.", scale: "agency", reverse: false },
+    { id: 10, text: "I end up using social media even when I don't mean to.", scale: "agency", reverse: true },
+    { id: 11, text: "I find it hard to resist the pull of social media.", scale: "agency", reverse: true },
+    { id: 12, text: "I am often manipulated by social media.", scale: "agency", reverse: true }
+  ];
+
+  const outcomeQuestions = [
+    {
+      id: 'distress',
+      text: "Over the past week, how often have you felt stressed, anxious, or down?",
+      scale: "distress",
+      options: ['Never', 'Rarely', 'Sometimes', 'Often', 'Very Often'],
+      reverse: true
+    },
+    {
+      id: 'support',
+      text: "I feel that I have strong, supportive relationships in my life.",
+      scale: "support",
+      options: ['Strongly Disagree', 'Disagree', 'Neither', 'Agree', 'Strongly Agree'],
+      reverse: false
+    },
+    {
+      id: 'satisfaction',
+      text: "In most ways, my life is close to ideal.",
+      scale: "satisfaction",
+      options: ['Strongly Disagree', 'Disagree', 'Neither', 'Agree', 'Strongly Agree'],
+      reverse: false
+    },
+    {
+      id: 'usage',
+      text: "On a typical day, how much time do you spend on social media?",
+      scale: "usage",
+      options: ['Less than 30 min', '30 min - 1 hour', '1-2 hours', '2-3 hours', 'More than 3 hours'],
+      reverse: false
+    }
+  ];
+
+  const questions = phase === 'mindset' ? mindsetQuestions : outcomeQuestions;
+
+  const handleAnswer = (value) => {
+    const questionId = phase === 'mindset' ? currentQuestion : questions[currentQuestion].id;
+    setAnswers({ ...answers, [questionId]: value });
+
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    } else if (phase === 'mindset') {
+      setPhase('outcomes');
+      setCurrentQuestion(0);
+    } else {
+      setShowResults(true);
+    }
+  };
+
+  const calculateScores = () => {
+    let valenceSum = 0;
+    let valenceCount = 0;
+    let agencySum = 0;
+    let agencyCount = 0;
+
+    mindsetQuestions.forEach((q, index) => {
+      if (answers[index] !== undefined) {
+        let score = answers[index];
+        if (q.reverse) {
+          score = 6 - score;
+        }
+
+        if (q.scale === 'valence') {
+          valenceSum += score;
+          valenceCount++;
+        } else {
+          agencySum += score;
+          agencyCount++;
+        }
+      }
+    });
+
+    const outcomes = {};
+    outcomeQuestions.forEach(q => {
+      if (answers[q.id] !== undefined) {
+        let score = answers[q.id];
+        if (q.reverse) {
+          score = 6 - score;
+        }
+        outcomes[q.scale] = score;
+      }
+    });
+
+    return {
+      valence: valenceCount > 0 ? (valenceSum / valenceCount) : 0,
+      agency: agencyCount > 0 ? (agencySum / agencyCount) : 0,
+      outcomes
+    };
+  };
+
+  const getComparison = (score, mean) => {
+    const diff = score - mean;
+    const percentDiff = ((diff / mean) * 100);
+
+    if (Math.abs(diff) < 0.3) {
+      return {
+        text: "About average",
+        description: "similar to the study average",
+        color: "text-blue-600",
+        arrow: null
+      };
+    } else if (diff > 0) {
+      return {
+        text: `${Math.abs(percentDiff).toFixed(0)}% higher`,
+        description: "higher than the study average",
+        color: "text-green-600",
+        arrow: "↑"
+      };
+    } else {
+      return {
+        text: `${Math.abs(percentDiff).toFixed(0)}% lower`,
+        description: "lower than the study average",
+        color: "text-orange-600",
+        arrow: "↓"
+      };
+    }
+  };
+
+  const getInterpretation = (score, type) => {
+    const numScore = parseFloat(score);
+
+    if (type === 'valence') {
+      if (numScore >= 4) {
+        return { level: "Positive Mindset", description: "You tend to view social media as enhancing and beneficial.", color: "text-green-700" };
+      } else if (numScore >= 3) {
+        return { level: "Neutral Mindset", description: "You have a balanced view of social media's effects.", color: "text-blue-700" };
+      } else {
+        return { level: "Negative Mindset", description: "You tend to view social media as harmful or a waste of time.", color: "text-orange-700" };
+      }
+    } else {
+      if (numScore >= 4) {
+        return { level: "High Agency", description: "You feel in control of your social media use.", color: "text-green-700" };
+      } else if (numScore >= 3) {
+        return { level: "Moderate Agency", description: "You have a moderate sense of control over your social media use.", color: "text-blue-700" };
+      } else {
+        return { level: "Low Agency", description: "You feel your social media use is somewhat out of your control.", color: "text-orange-700" };
+      }
+    }
+  };
+
+  const analyzePredictions = (scores) => {
+    const predictions = [];
+    const valence = parseFloat(scores.valence);
+    const agency = parseFloat(scores.agency);
+    const outcomes = scores.outcomes;
+
+    if (outcomes.distress !== undefined) {
+      let expected = "Moderate distress";
+      if (agency >= 4 && valence >= 4) expected = "Lower distress";
+      else if (agency < 2.5 || valence < 2.5) expected = "Higher distress";
+
+      let observed = "Moderate distress reported";
+      if (outcomes.distress >= 4) observed = "Lower distress reported";
+      else if (outcomes.distress <= 2) observed = "Higher distress reported";
+
+      let matchType = "neutral";
+      if ((agency >= 4 && valence >= 4 && outcomes.distress >= 4) ||
+          ((agency < 2.5 || valence < 2.5) && outcomes.distress <= 2)) {
+        matchType = "match";
+      } else if ((agency >= 4 && valence >= 4 && outcomes.distress <= 2) ||
+                 ((agency < 2.5 || valence < 2.5) && outcomes.distress >= 4)) {
+        matchType = "mismatch";
+      }
+
+      predictions.push({
+        outcome: "Psychological Well-being",
+        expected,
+        observed,
+        matchType,
+        explanation: "Research shows that higher agency and more positive valence mindsets are associated with less depression, anxiety, and stress."
+      });
+    }
+
+    if (outcomes.support !== undefined) {
+      let expected = "Moderate support";
+      if (valence >= 4) expected = "Stronger support";
+      else if (valence < 2.5) expected = "Weaker support";
+
+      let observed = "Moderate support reported";
+      if (outcomes.support >= 4) observed = "Strong support reported";
+      else if (outcomes.support <= 2) observed = "Weak support reported";
+
+      let matchType = "neutral";
+      if ((valence >= 4 && outcomes.support >= 4) ||
+          (valence < 2.5 && outcomes.support <= 2)) {
+        matchType = "match";
+      } else if ((valence >= 4 && outcomes.support <= 2) ||
+                 (valence < 2.5 && outcomes.support >= 4)) {
+        matchType = "mismatch";
+      }
+
+      predictions.push({
+        outcome: "Perceived Social Support",
+        expected,
+        observed,
+        matchType,
+        explanation: "Positive valence mindsets are associated with feeling more connected to friends and having stronger social relationships."
+      });
+    }
+
+    if (outcomes.satisfaction !== undefined) {
+      let expected = "Moderate satisfaction";
+      if (valence >= 4 && agency >= 3.5) expected = "Higher satisfaction";
+      else if (valence < 2.5 || agency < 2.5) expected = "Lower satisfaction";
+
+      let observed = "Moderate satisfaction reported";
+      if (outcomes.satisfaction >= 4) observed = "High satisfaction reported";
+      else if (outcomes.satisfaction <= 2) observed = "Low satisfaction reported";
+
+      let matchType = "neutral";
+      if ((valence >= 4 && agency >= 3.5 && outcomes.satisfaction >= 4) ||
+          ((valence < 2.5 || agency < 2.5) && outcomes.satisfaction <= 2)) {
+        matchType = "match";
+      } else if ((valence >= 4 && agency >= 3.5 && outcomes.satisfaction <= 2) ||
+                 ((valence < 2.5 || agency < 2.5) && outcomes.satisfaction >= 4)) {
+        matchType = "mismatch";
+      }
+
+      predictions.push({
+        outcome: "Life Satisfaction",
+        expected,
+        observed,
+        matchType,
+        explanation: "Both positive mindsets and agentic mindsets are associated with greater life satisfaction."
+      });
+    }
+
+    if (outcomes.usage !== undefined) {
+      let expected = "Moderate usage";
+      if (agency < 2.5) expected = "Higher usage";
+      else if (agency >= 4) expected = "Lower usage";
+
+      let observed = "Moderate usage reported";
+      if (outcomes.usage >= 4) observed = "Higher usage reported";
+      else if (outcomes.usage <= 2) observed = "Lower usage reported";
+
+      let matchType = "neutral";
+      if ((agency < 2.5 && outcomes.usage >= 4) ||
+          (agency >= 4 && outcomes.usage <= 2)) {
+        matchType = "match";
+      } else if ((agency < 2.5 && outcomes.usage <= 2) ||
+                 (agency >= 4 && outcomes.usage >= 4)) {
+        matchType = "mismatch";
+      }
+
+      predictions.push({
+        outcome: "Social Media Use",
+        expected,
+        observed,
+        matchType,
+        explanation: "Lower agency mindsets are associated with more time spent on social media, as people feel less control over their use."
+      });
+    }
+
+    return predictions;
+  };
+
+  const restart = () => {
+    setCurrentQuestion(0);
+    setAnswers({});
+    setShowResults(false);
+    setPhase('mindset');
+  };
+
+  if (showResults) {
+    const scores = calculateScores();
+    const valenceInterp = getInterpretation(scores.valence, 'valence');
+    const agencyInterp = getInterpretation(scores.agency, 'agency');
+    const valenceComp = getComparison(scores.valence, studyMeans.valence);
+    const agencyComp = getComparison(scores.agency, studyMeans.agency);
+    const predictions = analyzePredictions(scores);
+
+    return (
+      <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-lg my-8">
+        <h2 className="text-2xl font-bold mb-6 text-gray-800">Your Results</h2>
+
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          <div className="p-5 bg-gray-50 rounded-lg border-2 border-gray-200">
+            <h3 className="text-lg font-semibold mb-2">Valence Mindset</h3>
+            <p className="text-3xl font-bold mb-2">{scores.valence.toFixed(2)} / 5.00</p>
+            <p className={`text-lg font-medium mb-3 ${valenceInterp.color}`}>{valenceInterp.level}</p>
+            <div className="pt-3 border-t border-gray-300">
+              <div className="flex items-center gap-2 text-sm">
+                <Users className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-600">Study average: {studyMeans.valence.toFixed(2)}</span>
+              </div>
+              <p className={`text-sm font-medium mt-1 ${valenceComp.color}`}>
+                {valenceComp.arrow && <span className="text-lg mr-1">{valenceComp.arrow}</span>}
+                Your score is {valenceComp.text} ({valenceComp.description})
+              </p>
+            </div>
+          </div>
+
+          <div className="p-5 bg-gray-50 rounded-lg border-2 border-gray-200">
+            <h3 className="text-lg font-semibold mb-2">Agency Mindset</h3>
+            <p className="text-3xl font-bold mb-2">{scores.agency.toFixed(2)} / 5.00</p>
+            <p className={`text-lg font-medium mb-3 ${agencyInterp.color}`}>{agencyInterp.level}</p>
+            <div className="pt-3 border-t border-gray-300">
+              <div className="flex items-center gap-2 text-sm">
+                <Users className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-600">Study average: {studyMeans.agency.toFixed(2)}</span>
+              </div>
+              <p className={`text-sm font-medium mt-1 ${agencyComp.color}`}>
+                {agencyComp.arrow && <span className="text-lg mr-1">{agencyComp.arrow}</span>}
+                Your score is {agencyComp.text} ({agencyComp.description})
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <h3 className="text-xl font-semibold mb-4 text-gray-800">How Do Your Mindsets Relate to Your Well-being?</h3>
+
+        <div className="space-y-4 mb-6">
+          {predictions.map((pred, idx) => (
+            <div key={idx} className={`p-4 rounded-lg border-2 ${
+              pred.matchType === 'match' ? 'bg-green-50 border-green-200' :
+              pred.matchType === 'mismatch' ? 'bg-yellow-50 border-yellow-200' :
+              'bg-gray-50 border-gray-200'
+            }`}>
+              <div className="flex items-start justify-between mb-2">
+                <h4 className="font-semibold text-gray-800">{pred.outcome}</h4>
+                {pred.matchType === 'match' ? (
+                  <TrendingUp className="w-5 h-5 text-green-600 flex-shrink-0" />
+                ) : pred.matchType === 'mismatch' ? (
+                  <TrendingDown className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                ) : (
+                  <Minus className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                )}
+              </div>
+              <div className="text-sm space-y-1 mb-2">
+                <p><span className="font-medium">Research predicts:</span> {pred.expected}</p>
+                <p><span className="font-medium">You reported:</span> {pred.observed}</p>
+              </div>
+              <p className="text-xs text-gray-600 italic">{pred.explanation}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-6">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+            <div className="text-sm text-gray-700">
+              <p className="mb-2"><strong>Understanding your results:</strong></p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Comparisons are to a university student sample (n=325) from Lee & Hancock (2024)</li>
+                <li><strong>Green:</strong> Your experience aligns with typical research patterns</li>
+                <li><strong>Yellow:</strong> Your experience differs from typical patterns</li>
+                <li><strong>Gray:</strong> Your scores are in the moderate range</li>
+                <li>Many factors influence well-being beyond mindsets (sleep, relationships, activities, etc.)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <button onClick={restart} className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+          Take Quiz Again
+        </button>
+      </div>
+    );
+  }
+
+  const totalQuestions = mindsetQuestions.length + outcomeQuestions.length;
+  const questionsAnswered = phase === 'mindset' ? currentQuestion : mindsetQuestions.length + currentQuestion;
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg my-8">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2 text-gray-800">
+          {phase === 'mindset' ? 'Social Media Mindsets Scale' : 'About Your Well-being'}
+        </h2>
+        <p className="text-gray-600 mb-4">
+          {phase === 'mindset'
+            ? 'Answer questions about your beliefs regarding social media.'
+            : 'Now answer a few questions about your well-being and social media use.'}
+        </p>
+        <div className="flex justify-between items-center text-sm text-gray-500">
+          <span>Question {questionsAnswered + 1} of {totalQuestions}</span>
+          <span>{Math.round((questionsAnswered / totalQuestions) * 100)}% complete</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+          <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${(questionsAnswered / totalQuestions) * 100}%` }}></div>
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <p className="text-lg font-medium text-gray-800 mb-6">{questions[currentQuestion].text}</p>
+
+        <div className="space-y-3">
+          {(questions[currentQuestion].options || ['Strongly Disagree', 'Disagree', 'Neither Agree nor Disagree', 'Agree', 'Strongly Agree']).map((label, index) => (
+            <button
+              key={index}
+              onClick={() => handleAnswer(index + 1)}
+              className="w-full p-4 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
+            >
+              <span className="font-medium">{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {currentQuestion > 0 && (
+        <button onClick={() => setCurrentQuestion(currentQuestion - 1)} className="text-blue-600 hover:text-blue-800 font-medium">
+          ← Previous Question
+        </button>
+      )}
+    </div>
+  );
+};
+
+ReactDOM.render(<SMMSQuiz />, document.getElementById('smms-quiz-root'));
+</script>
+</body>
+</html>
