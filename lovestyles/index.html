@@ -106,16 +106,28 @@ const styleInfo = {
 
 const styleOrder = ['eros', 'ludus', 'storge', 'pragma', 'mania', 'agape'];
 
+// Fisher-Yates shuffle. Scoring is keyed off each item's fixed id and style,
+// so display order can be randomized freely without touching the results.
+const shuffle = (arr) => {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+};
+
 const LoveStylesQuiz = () => {
+  const [quizQuestions, setQuizQuestions] = useState(() => shuffle(questions));
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
 
   const handleAnswer = (value) => {
-    const q = questions[currentQuestion];
+    const q = quizQuestions[currentQuestion];
     setAnswers({ ...answers, [q.id]: value });
 
-    if (currentQuestion < questions.length - 1) {
+    if (currentQuestion < quizQuestions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
       setShowResults(true);
@@ -133,6 +145,7 @@ const LoveStylesQuiz = () => {
   };
 
   const restart = () => {
+    setQuizQuestions(shuffle(questions));
     setCurrentQuestion(0);
     setAnswers({});
     setShowResults(false);
@@ -202,16 +215,16 @@ const LoveStylesQuiz = () => {
         <h2 className="text-2xl font-bold mb-2 text-gray-800">Love Styles Quiz</h2>
         <p className="text-gray-600 mb-4">What do you look for in a romantic partner? Answer honestly, even if you're not currently in a relationship, based on what you'd expect or hope for.</p>
         <div className="flex justify-between items-center text-sm text-gray-500">
-          <span>Question {currentQuestion + 1} of {questions.length}</span>
-          <span>{Math.round((currentQuestion / questions.length) * 100)}% complete</span>
+          <span>Question {currentQuestion + 1} of {quizQuestions.length}</span>
+          <span>{Math.round((currentQuestion / quizQuestions.length) * 100)}% complete</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-          <div className="bg-rose-500 h-2 rounded-full transition-all duration-300" style={{ width: `${(currentQuestion / questions.length) * 100}%` }}></div>
+          <div className="bg-rose-500 h-2 rounded-full transition-all duration-300" style={{ width: `${(currentQuestion / quizQuestions.length) * 100}%` }}></div>
         </div>
       </div>
 
       <div className="mb-8">
-        <p className="text-lg font-medium text-gray-800 mb-6">{questions[currentQuestion].text}</p>
+        <p className="text-lg font-medium text-gray-800 mb-6">{quizQuestions[currentQuestion].text}</p>
 
         <div className="space-y-3">
           {['Strongly Disagree', 'Disagree', 'Neither Agree nor Disagree', 'Agree', 'Strongly Agree'].map((label, index) => (
