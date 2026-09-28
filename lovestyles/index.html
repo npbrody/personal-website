@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Love Styles Quiz</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+</head>
+<body>
+<div id="love-styles-quiz-root"></div>
+
+<script type="text/babel">
+const { useState } = React;
+
+const Heart = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+  </svg>
+);
+
+const AlertCircle = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="12" y1="8" x2="12" y2="12"></line>
+    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+  </svg>
+);
+
+// Items adapted from Hendrick and Hendrick's (1990) love attitudes scale for
+// people describing what they look for in a partner, rather than an existing
+// relationship. Five items per love style; each item is scored 1 (strongly
+// disagree) to 5 (strongly agree), so each style's total ranges from 5 to 25.
+const questions = [
+  { id: 1, style: 'eros', text: "I expect to feel an immediate attraction to a partner when we first meet." },
+  { id: 2, style: 'eros', text: "I want real physical chemistry with my partner." },
+  { id: 3, style: 'eros', text: "I want the physical side of my relationship to be intense and satisfying." },
+  { id: 4, style: 'eros', text: "I believe my partner and I will feel like we were meant for each other." },
+  { id: 5, style: 'eros', text: "I want my partner to fit my ideal standards of physical attractiveness." },
+
+  { id: 6, style: 'ludus', text: "I would try to keep a partner a little uncertain about my commitment." },
+  { id: 7, style: 'ludus', text: "I believe what a partner doesn't know about me wouldn't hurt them." },
+  { id: 8, style: 'ludus', text: "I think I could get over a relationship pretty easily if it ended." },
+  { id: 9, style: 'ludus', text: "If a partner got too dependent on me, I would back off." },
+  { id: 10, style: 'ludus', text: "I enjoy playing the field." },
+
+  { id: 11, style: 'storge', text: "I expect it would be hard to say exactly when friendship turned into love." },
+  { id: 12, style: 'storge', text: "I believe genuine love first requires caring, built through friendship." },
+  { id: 13, style: 'storge', text: "I want my love to grow out of a close friendship." },
+  { id: 14, style: 'storge', text: "I think of love as really a deep friendship, not a mysterious or mystical emotion." },
+  { id: 15, style: 'storge', text: "I expect my most satisfying relationship to develop out of a good friendship." },
+
+  { id: 16, style: 'pragma', text: "I consider what a partner is likely to become in life before committing to them." },
+  { id: 17, style: 'pragma', text: "I try to plan my life carefully before choosing a partner." },
+  { id: 18, style: 'pragma', text: "In choosing a partner, I believe it's best to find someone with a similar background." },
+  { id: 19, style: 'pragma', text: "An important factor in choosing a partner is whether they would be a good parent." },
+  { id: 20, style: 'pragma', text: "Before getting very involved with someone, I try to figure out how compatible our goals are." },
+
+  { id: 21, style: 'mania', text: "If a relationship of mine ended, I don't know how I would cope." },
+  { id: 22, style: 'mania', text: "It would drive me crazy if a partner didn't pay enough attention to me." },
+  { id: 23, style: 'mania', text: "I expect that when I fall in love, I'll have trouble concentrating on anything else." },
+  { id: 24, style: 'mania', text: "I wouldn't be able to relax if I suspected my partner was with someone else." },
+  { id: 25, style: 'mania', text: "I wish I could spend every minute of every day with a partner I love." },
+
+  { id: 26, style: 'agape', text: "I would rather suffer myself than let a partner suffer." },
+  { id: 27, style: 'agape', text: "I am usually willing to sacrifice my own wishes to help a partner reach their goals." },
+  { id: 28, style: 'agape', text: "I believe whatever I own should be my partner's to use as they please." },
+  { id: 29, style: 'agape', text: "Even when a partner behaves badly, I would still love them fully and unconditionally." },
+  { id: 30, style: 'agape', text: "I would endure all things for the sake of a partner." }
+];
+
+const styleInfo = {
+  eros: {
+    name: "Eros",
+    subtitle: "Passionate love",
+    description: "Drawn to strong physical attraction and chemistry, often felt quickly, with a sense that a partner fits an ideal picture."
+  },
+  ludus: {
+    name: "Ludus",
+    subtitle: "Playful love",
+    description: "Treats love as a game to be played without heavy commitment, favoring variety and independence over depending on one partner."
+  },
+  storge: {
+    name: "Storge",
+    subtitle: "Friendship-based love",
+    description: "Sees romantic love as growing gradually out of companionship and shared history rather than a sudden spark."
+  },
+  pragma: {
+    name: "Pragma",
+    subtitle: "Practical love",
+    description: "Approaches partner selection deliberately, weighing compatibility, shared background, and long-term fit."
+  },
+  mania: {
+    name: "Mania",
+    subtitle: "Possessive love",
+    description: "Marked by intense emotional highs and lows, jealousy, and anxiety about losing the relationship."
+  },
+  agape: {
+    name: "Agape",
+    subtitle: "Selfless love",
+    description: "Centers on giving to a partner without expecting anything in return, prioritizing their needs above one's own."
+  }
+};
+
+const styleOrder = ['eros', 'ludus', 'storge', 'pragma', 'mania', 'agape'];
+
+const LoveStylesQuiz = () => {
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [showResults, setShowResults] = useState(false);
+
+  const handleAnswer = (value) => {
+    const q = questions[currentQuestion];
+    setAnswers({ ...answers, [q.id]: value });
+
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    } else {
+      setShowResults(true);
+    }
+  };
+
+  const calculateScores = () => {
+    const totals = { eros: 0, ludus: 0, storge: 0, pragma: 0, mania: 0, agape: 0 };
+    questions.forEach((q) => {
+      if (answers[q.id] !== undefined) {
+        totals[q.style] += answers[q.id];
+      }
+    });
+    return totals;
+  };
+
+  const restart = () => {
+    setCurrentQuestion(0);
+    setAnswers({});
+    setShowResults(false);
+  };
+
+  if (showResults) {
+    const scores = calculateScores();
+    const maxScore = Math.max(...styleOrder.map((s) => scores[s]));
+    const topStyles = styleOrder.filter((s) => scores[s] === maxScore);
+
+    return (
+      <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-lg my-8">
+        <h2 className="text-2xl font-bold mb-2 text-gray-800">Your Love Styles</h2>
+        <p className="text-gray-600 mb-6">Each style is scored from 5 to 25. Most people score meaningfully on more than one style, this reflects general tendencies rather than a single fixed type.</p>
+
+        {topStyles.length > 0 && (
+          <div className="p-4 mb-6 bg-rose-50 border-2 border-rose-200 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <Heart className="w-5 h-5 text-rose-500" />
+              <span className="font-semibold text-gray-800">
+                Highest score{topStyles.length > 1 ? "s" : ""}: {topStyles.map((s) => styleInfo[s].name).join(" and ")}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600">
+              {topStyles.map((s) => styleInfo[s].description).join(" ")}
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-4 mb-6">
+          {styleOrder.map((s) => (
+            <div key={s} className="p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+              <div className="flex items-baseline justify-between mb-1">
+                <div>
+                  <span className="font-semibold text-gray-800">{styleInfo[s].name}</span>
+                  <span className="text-sm text-gray-500 ml-2">{styleInfo[s].subtitle}</span>
+                </div>
+                <span className="text-xl font-bold text-gray-800">{scores[s]} / 25</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <div className="bg-rose-400 h-2 rounded-full transition-all duration-300" style={{ width: `${((scores[s] - 5) / 20) * 100}%` }}></div>
+              </div>
+              <p className="text-sm text-gray-600">{styleInfo[s].description}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-6">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+            <div className="text-sm text-gray-700">
+              <p>These items are adapted from Hendrick and Hendrick's (1990) love attitudes scale to describe what someone looks for in a partner rather than an existing relationship. No published averages exist for this adapted wording, so scores are shown on their own rather than compared to a norm group.</p>
+            </div>
+          </div>
+        </div>
+
+        <button onClick={restart} className="w-full bg-rose-500 text-white py-3 rounded-lg hover:bg-rose-600 transition-colors font-medium">
+          Take Quiz Again
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg my-8">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2 text-gray-800">Love Styles Quiz</h2>
+        <p className="text-gray-600 mb-4">What do you look for in a romantic partner? Answer honestly, even if you're not currently in a relationship, based on what you'd expect or hope for.</p>
+        <div className="flex justify-between items-center text-sm text-gray-500">
+          <span>Question {currentQuestion + 1} of {questions.length}</span>
+          <span>{Math.round((currentQuestion / questions.length) * 100)}% complete</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+          <div className="bg-rose-500 h-2 rounded-full transition-all duration-300" style={{ width: `${(currentQuestion / questions.length) * 100}%` }}></div>
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <p className="text-lg font-medium text-gray-800 mb-6">{questions[currentQuestion].text}</p>
+
+        <div className="space-y-3">
+          {['Strongly Disagree', 'Disagree', 'Neither Agree nor Disagree', 'Agree', 'Strongly Agree'].map((label, index) => (
+            <button
+              key={index}
+              onClick={() => handleAnswer(index + 1)}
+              className="w-full p-4 text-left border-2 border-gray-200 rounded-lg hover:border-rose-400 hover:bg-rose-50 transition-all"
+            >
+              <span className="font-medium">{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {currentQuestion > 0 && (
+        <button onClick={() => setCurrentQuestion(currentQuestion - 1)} className="text-rose-600 hover:text-rose-800 font-medium">
+          ← Previous Question
+        </button>
+      )}
+
+      <p className="text-xs text-gray-400 mt-6">Adapted from Hendrick and Hendrick's (1990) love attitudes scale.</p>
+    </div>
+  );
+};
+
+ReactDOM.render(<LoveStylesQuiz />, document.getElementById('love-styles-quiz-root'));
+</script>
+</body>
+</html>
