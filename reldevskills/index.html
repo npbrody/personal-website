@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relational Development Skills Assessment</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+</head>
+<body>
+<div id="icq-quiz-root"></div>
+
+<script type="text/babel">
+const { useState } = React;
+
+const Users = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+    <circle cx="9" cy="7" r="4"></circle>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+  </svg>
+);
+
+const AlertCircle = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="12" y1="8" x2="12" y2="12"></line>
+    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+  </svg>
+);
+
+// Items are the Interpersonal Competence Questionnaire (ICQ), Buhrmester,
+// Furman, Wittenberg, & Reis (1988), reproduced with permission from the
+// American Psychological Association. Five items per domain, each scored
+// 1 (poor at this) to 5 (good at this), so each domain's total runs 5 to 25.
+const questions = [
+  { id: 1, domain: 'initiation', text: "Asking or suggesting to someone new that you get together and do something." },
+  { id: 2, domain: 'negativeAssertion', text: "Telling someone you don't like a certain way he/she has been treating you." },
+  { id: 3, domain: 'emotionalSupport', text: "Helping someone work through his/her thoughts and feelings about a major life decision." },
+  { id: 4, domain: 'conflictManagement', text: "Being able to admit you might be wrong when a disagreement begins to build into a serious fight." },
+  { id: 5, domain: 'selfDisclosure', text: "Confiding in a new friend and letting him/her see your softer, more sensitive side." },
+  { id: 6, domain: 'conflictManagement', text: "Being able to put resentful feelings aside during a fight." },
+  { id: 7, domain: 'initiation', text: "Finding and suggesting things to do with new people you find interesting." },
+  { id: 8, domain: 'negativeAssertion', text: "Turning down an unreasonable request." },
+  { id: 9, domain: 'negativeAssertion', text: "Saying no when someone asks you to do something you don't want to do." },
+  { id: 10, domain: 'conflictManagement', text: "When having a conflict with someone, really listening to his or her complaints and not trying to “read” his/her mind." },
+  { id: 11, domain: 'initiation', text: "Being an interesting and enjoyable person when first getting to know people." },
+  { id: 12, domain: 'negativeAssertion', text: "Standing up for your rights when someone is neglecting you or being inconsiderate." },
+  { id: 13, domain: 'selfDisclosure', text: "Letting a new companion get to know the “real you.”" },
+  { id: 14, domain: 'initiation', text: "Introducing yourself to someone you might like to get to know." },
+  { id: 15, domain: 'selfDisclosure', text: "Letting down your protective outer shell and trusting others." },
+  { id: 16, domain: 'emotionalSupport', text: "Being a good and sensitive listener for someone who is upset." },
+  { id: 17, domain: 'conflictManagement', text: "Refraining from saying things that might cause a disagreement to build into a big fight." },
+  { id: 18, domain: 'selfDisclosure', text: "Telling others things that secretly make you feel anxious or afraid." },
+  { id: 19, domain: 'emotionalSupport', text: "Being able to do and say things to support another person when she/he is feeling down." },
+  { id: 20, domain: 'initiation', text: "Presenting a good first impression to people with whom you might like to become friends." },
+  { id: 21, domain: 'negativeAssertion', text: "Telling someone that she/he has done something that hurt your feelings." },
+  { id: 22, domain: 'emotionalSupport', text: "Being able to show empathic concern even when the other person's concern is uninteresting to you." },
+  { id: 23, domain: 'conflictManagement', text: "When angry, being able to accept that the other person has a valid point of view even if you don't agree with that view." },
+  { id: 24, domain: 'selfDisclosure', text: "Knowing how to move a conversation beyond superficial talk to really get to know each other." },
+  { id: 25, domain: 'emotionalSupport', text: "Being able to give advice in ways that are well received." }
+];
+
+const domainInfo = {
+  initiation: {
+    name: "Initiation",
+    subtitle: "Relationship initiation skills",
+    description: "Starting new relationships: introducing yourself, suggesting plans, and making a good impression on people you'd like to know better."
+  },
+  negativeAssertion: {
+    name: "Negative Assertion",
+    subtitle: "Negative assertion skills",
+    description: "Standing up for your own rights and expressing displeasure or disagreement when someone treats you poorly."
+  },
+  selfDisclosure: {
+    name: "Self-Disclosure",
+    subtitle: "Self-disclosure skills",
+    description: "Opening up and sharing private thoughts, feelings, and vulnerabilities with others."
+  },
+  emotionalSupport: {
+    name: "Emotional Support",
+    subtitle: "Emotional support skills",
+    description: "Listening well and helping someone else work through difficult feelings or decisions."
+  },
+  conflictManagement: {
+    name: "Conflict Management",
+    subtitle: "Conflict management skills",
+    description: "Keeping a disagreement from escalating and staying able to see the other person's point of view when angry."
+  }
+};
+
+const domainOrder = ['initiation', 'negativeAssertion', 'selfDisclosure', 'emotionalSupport', 'conflictManagement'];
+
+// Fisher-Yates shuffle. Scoring is keyed off each item's fixed id and domain,
+// so display order can be randomized freely without touching the results.
+const shuffle = (arr) => {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+};
+
+const ICQQuiz = () => {
+  const [quizQuestions, setQuizQuestions] = useState(() => shuffle(questions));
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [showResults, setShowResults] = useState(false);
+
+  const handleAnswer = (value) => {
+    const q = quizQuestions[currentQuestion];
+    setAnswers({ ...answers, [q.id]: value });
+
+    if (currentQuestion < quizQuestions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    } else {
+      setShowResults(true);
+    }
+  };
+
+  const calculateScores = () => {
+    const totals = { initiation: 0, negativeAssertion: 0, selfDisclosure: 0, emotionalSupport: 0, conflictManagement: 0 };
+    questions.forEach((q) => {
+      if (answers[q.id] !== undefined) {
+        totals[q.domain] += answers[q.id];
+      }
+    });
+    return totals;
+  };
+
+  const restart = () => {
+    setQuizQuestions(shuffle(questions));
+    setCurrentQuestion(0);
+    setAnswers({});
+    setShowResults(false);
+  };
+
+  if (showResults) {
+    const scores = calculateScores();
+    const maxScore = Math.max(...domainOrder.map((d) => scores[d]));
+    const topDomains = domainOrder.filter((d) => scores[d] === maxScore);
+
+    return (
+      <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-lg my-8">
+        <h2 className="text-2xl font-bold mb-2 text-gray-800">Your Results</h2>
+        <p className="text-gray-600 mb-6">Each domain is scored from 5 to 25. Most people are stronger in some domains than others, this reflects your current tendencies rather than a fixed trait.</p>
+
+        {topDomains.length > 0 && (
+          <div className="p-4 mb-6 bg-teal-50 border-2 border-teal-200 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <Users className="w-5 h-5 text-teal-600" />
+              <span className="font-semibold text-gray-800">
+                Strongest domain{topDomains.length > 1 ? "s" : ""}: {topDomains.map((d) => domainInfo[d].name).join(" and ")}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600">
+              {topDomains.map((d) => domainInfo[d].description).join(" ")}
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-4 mb-6">
+          {domainOrder.map((d) => (
+            <div key={d} className="p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+              <div className="flex items-baseline justify-between mb-1">
+                <div>
+                  <span className="font-semibold text-gray-800">{domainInfo[d].name}</span>
+                  <span className="text-sm text-gray-500 ml-2">{domainInfo[d].subtitle}</span>
+                </div>
+                <span className="text-xl font-bold text-gray-800">{scores[d]} / 25</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <div className="bg-teal-500 h-2 rounded-full transition-all duration-300" style={{ width: `${((scores[d] - 5) / 20) * 100}%` }}></div>
+              </div>
+              <p className="text-sm text-gray-600">{domainInfo[d].description}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-6">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+            <div className="text-sm text-gray-700">
+              <p>This is the Interpersonal Competence Questionnaire (ICQ) developed by Buhrmester, Furman, Wittenberg, and Reis (1988). No published average scores are shown here, so these totals are presented on their own rather than compared to a norm group.</p>
+            </div>
+          </div>
+        </div>
+
+        <button onClick={restart} className="w-full bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700 transition-colors font-medium">
+          Take Quiz Again
+        </button>
+
+        <p className="text-xs text-gray-400 mt-6 text-center">
+          Copyright &copy; 1988 by the American Psychological Association. Reproduced/adapted with permission. The official citation for this material is: Buhrmester, D., Furman, W., Wittenberg, M. T., &amp; Reis, H. T. (1988). Five domains of interpersonal competence in peer relationships. <em>Journal of Personality and Social Psychology, 55</em>(6), 991&ndash;1008. No further reproduction or distribution is permitted without written permission from the American Psychological Association.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg my-8">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2 text-gray-800">Relational Development Skills Assessment</h2>
+        <p className="text-gray-600 mb-4">People have different ways of communicating. For each item, rate how well you feel you can perform that type of communication, being as honest as possible.</p>
+        <div className="flex justify-between items-center text-sm text-gray-500">
+          <span>Question {currentQuestion + 1} of {quizQuestions.length}</span>
+          <span>{Math.round((currentQuestion / quizQuestions.length) * 100)}% complete</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+          <div className="bg-teal-600 h-2 rounded-full transition-all duration-300" style={{ width: `${(currentQuestion / quizQuestions.length) * 100}%` }}></div>
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <p className="text-lg font-medium text-gray-800 mb-6">{quizQuestions[currentQuestion].text}</p>
+
+        <div className="space-y-3">
+          {[
+            { value: 1, label: "Poor at this", sub: "would avoid doing it if possible" },
+            { value: 2, label: "2" },
+            { value: 3, label: "3" },
+            { value: 4, label: "4" },
+            { value: 5, label: "Good at this", sub: "would be comfortable in that situation" }
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleAnswer(opt.value)}
+              className="w-full p-4 text-left border-2 border-gray-200 rounded-lg hover:border-teal-500 hover:bg-teal-50 transition-all flex items-baseline gap-3"
+            >
+              <span className="font-bold text-gray-400 w-5">{opt.value}</span>
+              <span>
+                <span className="font-medium">{opt.label}</span>
+                {opt.sub && <span className="text-sm text-gray-500 ml-2">({opt.sub})</span>}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {currentQuestion > 0 && (
+        <button onClick={() => setCurrentQuestion(currentQuestion - 1)} className="text-teal-700 hover:text-teal-900 font-medium">
+          ← Previous Question
+        </button>
+      )}
+
+      <p className="text-xs text-gray-400 mt-6">Interpersonal Competence Questionnaire, Buhrmester, Furman, Wittenberg, &amp; Reis (1988). Reproduced/adapted with permission of the American Psychological Association.</p>
+    </div>
+  );
+};
+
+ReactDOM.render(<ICQQuiz />, document.getElementById('icq-quiz-root'));
+</script>
+</body>
+</html>
