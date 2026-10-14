@@ -27,6 +27,8 @@
     --s3-bg: #FDECEA;
     --s4: #0D9488;
     --s4-bg: #E6F7F5;
+    --perf: #1A7F4E;
+    --perf-bg: #E6F7ED;
   }
 
   html { height: 100%; }
@@ -445,6 +447,7 @@
   .filter-tab.active-s3 { background: var(--s3-bg); color: var(--s3); border-color: var(--s3); }
   .filter-tab.active-s4 { background: var(--s4-bg); color: var(--s4); border-color: var(--s4); }
   .filter-tab.active-artists { background: var(--yellow); color: var(--ink); border-color: var(--ink); }
+  .filter-tab.active-performance { background: var(--perf-bg); color: var(--perf); border-color: var(--perf); }
 
   .song-list {
     display: flex;
@@ -647,6 +650,85 @@
     white-space: nowrap;
   }
 
+  .perf-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .perf-caption {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .perf-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 520px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .perf-list::-webkit-scrollbar { width: 4px; }
+  .perf-list::-webkit-scrollbar-track { background: transparent; }
+  .perf-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+  .perf-row {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+  }
+
+  .perf-bar-wrap {
+    position: relative;
+    height: 30px;
+    background: var(--card);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1.5px solid var(--line);
+  }
+
+  .perf-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: var(--perf);
+    opacity: 0.55;
+    transition: opacity 0.15s;
+  }
+
+  .perf-bar-wrap:hover .perf-fill {
+    opacity: 0.8;
+  }
+
+  .perf-baseline {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--ink);
+    opacity: 0.35;
+  }
+
+  .perf-value {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--perf);
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .perf-n {
+    color: var(--muted);
+    font-weight: 600;
+  }
+
 </style>
 </head>
 <body>
@@ -699,6 +781,7 @@
       <button class="filter-tab" data-filter="S3" onclick="setFilter('S3', this)">S3</button>
       <button class="filter-tab" data-filter="S4" onclick="setFilter('S4', this)">S4</button>
       <button class="filter-tab" data-filter="artists" onclick="setFilter('artists', this)">Top Artists</button>
+      <button class="filter-tab" data-filter="performance" onclick="setFilter('performance', this)">Performance</button>
     </div>
   </div>
   <div class="song-list" id="songList"></div>
@@ -710,6 +793,10 @@
       <span class="freq-leg-item"><span class="freq-leg-swatch" style="background:var(--s4)"></span>S4</span>
     </div>
     <div class="freq-list" id="freqList"></div>
+  </div>
+  <div class="perf-panel" id="perfPanel" style="display:none">
+    <p class="perf-caption">For every submission, the share of a round's points it earned divided by an even split across that round's field -- 1.00x is exactly average, higher means it beat the field it was up against. Averaged across an artist's submissions (min. 3 to qualify), so this rewards consistently strong showings, not just volume.</p>
+    <div class="perf-list" id="perfList"></div>
   </div>
 </div>
 
@@ -900,18 +987,27 @@ function setFilter(filter, btn) {
   else if (filter === 'S2') btn.classList.add('active-s2');
   else if (filter === 'S3') btn.classList.add('active-s3');
   else if (filter === 'S4') btn.classList.add('active-s4');
+  else if (filter === 'performance') btn.classList.add('active-performance');
   else btn.classList.add('active-artists');
 
   const songListEl = document.getElementById('songList');
   const artistPanel = document.getElementById('artistPanel');
+  const perfPanel = document.getElementById('perfPanel');
   const archiveTitle = document.getElementById('archiveTitle');
 
   if (filter === 'artists') {
     songListEl.style.display = 'none';
     artistPanel.style.display = '';
+    perfPanel.style.display = 'none';
     archiveTitle.textContent = 'Most submitted artists';
+  } else if (filter === 'performance') {
+    songListEl.style.display = 'none';
+    artistPanel.style.display = 'none';
+    perfPanel.style.display = '';
+    archiveTitle.textContent = 'Artist performance index';
   } else {
     artistPanel.style.display = 'none';
+    perfPanel.style.display = 'none';
     songListEl.style.display = '';
     archiveTitle.textContent = 'Full archive';
     renderBrowse();
@@ -941,6 +1037,7 @@ renderBrowse();
 // Artist frequency list — stacked bars by season
 const ARTIST_FREQ = [{"name": "The Smashing Pumpkins", "S1": 1, "S2": 3, "S3": 2, "S4": 0, "total": 6}, {"name": "Saves The Day", "S1": 2, "S2": 2, "S3": 2, "S4": 0, "total": 6}, {"name": "Charli xcx", "S1": 2, "S2": 2, "S3": 1, "S4": 0, "total": 5}, {"name": "Beyoncé", "S1": 1, "S2": 2, "S3": 2, "S4": 0, "total": 5}, {"name": "Phoebe Bridgers", "S1": 2, "S2": 3, "S3": 0, "S4": 0, "total": 5}, {"name": "Doja Cat", "S1": 0, "S2": 2, "S3": 2, "S4": 1, "total": 5}, {"name": "The Beatles", "S1": 0, "S2": 1, "S3": 3, "S4": 1, "total": 5}, {"name": "Snoop Dogg", "S1": 4, "S2": 0, "S3": 0, "S4": 0, "total": 4}, {"name": "NOFX", "S1": 2, "S2": 1, "S3": 1, "S4": 0, "total": 4}, {"name": "Lil Wayne", "S1": 2, "S2": 1, "S3": 0, "S4": 1, "total": 4}, {"name": "JAŸ-Z", "S1": 1, "S2": 2, "S3": 1, "S4": 0, "total": 4}, {"name": "Death Cab for Cutie", "S1": 2, "S2": 1, "S3": 1, "S4": 0, "total": 4}, {"name": "The Weakerthans", "S1": 2, "S2": 1, "S3": 1, "S4": 0, "total": 4}, {"name": "Jimmy Eat World", "S1": 1, "S2": 1, "S3": 2, "S4": 0, "total": 4}, {"name": "Waxahatchee", "S1": 2, "S2": 2, "S3": 0, "S4": 0, "total": 4}, {"name": "The Marías", "S1": 1, "S2": 2, "S3": 1, "S4": 0, "total": 4}, {"name": "Childish Gambino", "S1": 1, "S2": 1, "S3": 2, "S4": 0, "total": 4}, {"name": "Missy Elliott", "S1": 0, "S2": 3, "S3": 0, "S4": 1, "total": 4}, {"name": "Lana Del Rey", "S1": 1, "S2": 1, "S3": 1, "S4": 0, "total": 3}, {"name": "Deftones", "S1": 1, "S2": 0, "S3": 2, "S4": 0, "total": 3}, {"name": "The Postal Service", "S1": 2, "S2": 0, "S3": 1, "S4": 0, "total": 3}, {"name": "Sublime", "S1": 1, "S2": 0, "S3": 2, "S4": 0, "total": 3}, {"name": "Sade", "S1": 1, "S2": 2, "S3": 0, "S4": 0, "total": 3}, {"name": "Ratatat", "S1": 2, "S2": 0, "S3": 1, "S4": 0, "total": 3}, {"name": "Oasis", "S1": 2, "S2": 1, "S3": 0, "S4": 0, "total": 3}, {"name": "Kendrick Lamar", "S1": 1, "S2": 0, "S3": 2, "S4": 0, "total": 3}, {"name": "Khruangbin", "S1": 1, "S2": 1, "S3": 0, "S4": 1, "total": 3}, {"name": "Frank Ocean", "S1": 1, "S2": 1, "S3": 1, "S4": 0, "total": 3}, {"name": "Nine Inch Nails", "S1": 3, "S2": 0, "S3": 0, "S4": 0, "total": 3}, {"name": "Explosions In The Sky", "S1": 2, "S2": 1, "S3": 0, "S4": 0, "total": 3}, {"name": "Trent Reznor and Atticus Ross", "S1": 2, "S2": 0, "S3": 1, "S4": 0, "total": 3}, {"name": "Black Sabbath", "S1": 1, "S2": 1, "S3": 1, "S4": 0, "total": 3}, {"name": "2Pac", "S1": 1, "S2": 1, "S3": 1, "S4": 0, "total": 3}, {"name": "The Notorious B.I.G.", "S1": 2, "S2": 1, "S3": 0, "S4": 0, "total": 3}, {"name": "The Get Up Kids", "S1": 1, "S2": 2, "S3": 0, "S4": 0, "total": 3}, {"name": "Kevin Devine", "S1": 1, "S2": 1, "S3": 1, "S4": 0, "total": 3}, {"name": "Brand New", "S1": 1, "S2": 1, "S3": 1, "S4": 0, "total": 3}, {"name": "Tears For Fears", "S1": 1, "S2": 0, "S3": 1, "S4": 1, "total": 3}, {"name": "Mariah Carey", "S1": 1, "S2": 1, "S3": 1, "S4": 0, "total": 3}, {"name": "Julien Baker", "S1": 1, "S2": 1, "S3": 1, "S4": 0, "total": 3}, {"name": "Lady Gaga", "S1": 1, "S2": 1, "S3": 1, "S4": 0, "total": 3}, {"name": "The Armed", "S1": 2, "S2": 0, "S3": 1, "S4": 0, "total": 3}, {"name": "Elliott Smith", "S1": 1, "S2": 1, "S3": 1, "S4": 0, "total": 3}, {"name": "Nirvana", "S1": 1, "S2": 0, "S3": 2, "S4": 0, "total": 3}, {"name": "Sufjan Stevens", "S1": 2, "S2": 1, "S3": 0, "S4": 0, "total": 3}, {"name": "Depeche Mode", "S1": 0, "S2": 1, "S3": 2, "S4": 0, "total": 3}, {"name": "Garbage", "S1": 0, "S2": 2, "S3": 1, "S4": 0, "total": 3}, {"name": "New Order", "S1": 0, "S2": 2, "S3": 1, "S4": 0, "total": 3}, {"name": "Bright Eyes", "S1": 0, "S2": 3, "S3": 0, "S4": 0, "total": 3}, {"name": "MGMT", "S1": 0, "S2": 2, "S3": 1, "S4": 0, "total": 3}, {"name": "The Cure", "S1": 0, "S2": 1, "S3": 2, "S4": 0, "total": 3}, {"name": "The Shins", "S1": 0, "S2": 2, "S3": 1, "S4": 0, "total": 3}, {"name": "Kesha", "S1": 0, "S2": 2, "S3": 0, "S4": 1, "total": 3}, {"name": "Pharrell Williams", "S1": 0, "S2": 2, "S3": 1, "S4": 0, "total": 3}, {"name": "Tame Impala", "S1": 0, "S2": 2, "S3": 1, "S4": 0, "total": 3}, {"name": "Clairo", "S1": 0, "S2": 2, "S3": 1, "S4": 0, "total": 3}, {"name": "Tyler, The Creator", "S1": 0, "S2": 2, "S3": 1, "S4": 0, "total": 3}, {"name": "Megan Thee Stallion", "S1": 0, "S2": 3, "S3": 0, "S4": 0, "total": 3}, {"name": "M83", "S1": 0, "S2": 1, "S3": 1, "S4": 1, "total": 3}, {"name": "Misfits", "S1": 0, "S2": 1, "S3": 2, "S4": 0, "total": 3}, {"name": "Regina Spektor", "S1": 0, "S2": 1, "S3": 1, "S4": 1, "total": 3}, {"name": "Sweet Pill", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Royel Otis", "S1": 2, "S2": 0, "S3": 0, "S4": 0, "total": 2}, {"name": "Snail Mail", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "✝✝✝ (Crosses)", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "CHVRCHES", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Paramore", "S1": 2, "S2": 0, "S3": 0, "S4": 0, "total": 2}, {"name": "CAKE", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Me First and the Gimme Gimmes", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Wednesday", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "LMFAO", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "A$AP Rocky", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Mark Ronson", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Beastie Boys", "S1": 2, "S2": 0, "S3": 0, "S4": 0, "total": 2}, {"name": "Lit", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Jenny Lewis", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Japandroids", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Nas", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Leon Bridges", "S1": 1, "S2": 0, "S3": 0, "S4": 1, "total": 2}, {"name": "Zero 7", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Janet Jackson", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "USHER", "S1": 1, "S2": 0, "S3": 0, "S4": 1, "total": 2}, {"name": "Santo & Johnny", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Daft Punk", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Max Richter", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Darude", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "A Tribe Called Quest", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Busta Rhymes", "S1": 1, "S2": 0, "S3": 0, "S4": 1, "total": 2}, {"name": "Ms. Lauryn Hill", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Wu-Tang Clan", "S1": 1, "S2": 0, "S3": 0, "S4": 1, "total": 2}, {"name": "Coolio", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Da Brat", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Dr. Dre", "S1": 1, "S2": 0, "S3": 0, "S4": 1, "total": 2}, {"name": "Big Pun", "S1": 1, "S2": 0, "S3": 0, "S4": 1, "total": 2}, {"name": "Big Moe", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "JUVENILE", "S1": 1, "S2": 0, "S3": 0, "S4": 1, "total": 2}, {"name": "Mannie Fresh", "S1": 1, "S2": 0, "S3": 0, "S4": 1, "total": 2}, {"name": "Geto Boys", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Midtown", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "The Anniversary", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "The Early November", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Taking Back Sunday", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "My Chemical Romance", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Ace Enders", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "The Lonely Island", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Lucy Dacus", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Ben Kweller", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Wet Leg", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Lorde", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "HAIM", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Doechii", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Chappell Roan", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Turnstile", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Bon Iver", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Johnny Dynamite", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Mazzy Star", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Nico", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Owen", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "The National", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Jesu", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Band of Horses", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "Stone Temple Pilots", "S1": 1, "S2": 0, "S3": 1, "S4": 0, "total": 2}, {"name": "Chance the Rapper", "S1": 1, "S2": 1, "S3": 0, "S4": 0, "total": 2}, {"name": "INXS", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "LCD Soundsystem", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Pixies", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Alkaline Trio", "S1": 0, "S2": 2, "S3": 0, "S4": 0, "total": 2}, {"name": "STRFKR", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Rihanna", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Beach House", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Grimes", "S1": 0, "S2": 2, "S3": 0, "S4": 0, "total": 2}, {"name": "Justin Timberlake", "S1": 0, "S2": 2, "S3": 0, "S4": 0, "total": 2}, {"name": "The Doors", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Soccer Mommy", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Alanis Morissette", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Bone Thugs-N-Harmony", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "The Cranberries", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Air", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Touché Amoré", "S1": 0, "S2": 2, "S3": 0, "S4": 0, "total": 2}, {"name": "Fiona Apple", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Mac Miller", "S1": 0, "S2": 1, "S3": 0, "S4": 1, "total": 2}, {"name": "Brother.", "S1": 0, "S2": 2, "S3": 0, "S4": 0, "total": 2}, {"name": "Origami Angel", "S1": 0, "S2": 2, "S3": 0, "S4": 0, "total": 2}, {"name": "Eagles", "S1": 0, "S2": 2, "S3": 0, "S4": 0, "total": 2}, {"name": "beabadoobee", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Radiohead", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Toadies", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "The Black Dahlia Murder", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Type O Negative", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Talking Heads", "S1": 0, "S2": 1, "S3": 0, "S4": 1, "total": 2}, {"name": "KPop Demon Hunters Cast", "S1": 0, "S2": 2, "S3": 0, "S4": 0, "total": 2}, {"name": "Sleigh Bells", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Rage Against The Machine", "S1": 0, "S2": 1, "S3": 0, "S4": 1, "total": 2}, {"name": "Yeah Yeah Yeahs", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Outkast", "S1": 0, "S2": 1, "S3": 0, "S4": 1, "total": 2}, {"name": "Method Man", "S1": 0, "S2": 2, "S3": 0, "S4": 0, "total": 2}, {"name": "Glenn Danzig", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "The Flaming Lips", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Lil Nas X", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Sadurn", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Japanese Breakfast", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Modest Mouse", "S1": 0, "S2": 1, "S3": 0, "S4": 1, "total": 2}, {"name": "Elton John", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Bill Withers", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Jay Som", "S1": 0, "S2": 1, "S3": 1, "S4": 0, "total": 2}, {"name": "Nena", "S1": 0, "S2": 1, "S3": 0, "S4": 1, "total": 2}, {"name": "Eminem", "S1": 0, "S2": 0, "S3": 1, "S4": 1, "total": 2}, {"name": "David Bowie", "S1": 0, "S2": 0, "S3": 2, "S4": 0, "total": 2}, {"name": "Kid Cudi", "S1": 0, "S2": 0, "S3": 2, "S4": 0, "total": 2}, {"name": "Queen", "S1": 0, "S2": 0, "S3": 1, "S4": 1, "total": 2}, {"name": "Madonna", "S1": 0, "S2": 0, "S3": 2, "S4": 0, "total": 2}, {"name": "Kanye West", "S1": 0, "S2": 0, "S3": 2, "S4": 0, "total": 2}, {"name": "Boyz II Men", "S1": 0, "S2": 0, "S3": 2, "S4": 0, "total": 2}, {"name": "RZA", "S1": 0, "S2": 0, "S3": 0, "S4": 2, "total": 2}];
 
+const ARTIST_PERF = [{"name": "Tears For Fears", "avg": 1.94, "n": 3}, {"name": "Waxahatchee", "avg": 1.49, "n": 4}, {"name": "Kendrick Lamar", "avg": 1.467, "n": 3}, {"name": "Explosions In The Sky", "avg": 1.396, "n": 3}, {"name": "Elliott Smith", "avg": 1.389, "n": 3}, {"name": "The Marías", "avg": 1.375, "n": 4}, {"name": "Saves The Day", "avg": 1.35, "n": 6}, {"name": "Depeche Mode", "avg": 1.345, "n": 3}, {"name": "Nine Inch Nails", "avg": 1.333, "n": 3}, {"name": "New Order", "avg": 1.333, "n": 3}, {"name": "Megan Thee Stallion", "avg": 1.3, "n": 3}, {"name": "The Smashing Pumpkins", "avg": 1.296, "n": 6}, {"name": "The Get Up Kids", "avg": 1.289, "n": 3}, {"name": "M83", "avg": 1.284, "n": 3}, {"name": "Death Cab for Cutie", "avg": 1.275, "n": 4}, {"name": "Garbage", "avg": 1.267, "n": 3}, {"name": "Childish Gambino", "avg": 1.243, "n": 4}, {"name": "Charli xcx", "avg": 1.24, "n": 5}, {"name": "Nirvana", "avg": 1.2, "n": 3}, {"name": "The Shins", "avg": 1.187, "n": 3}, {"name": "Misfits", "avg": 1.167, "n": 3}, {"name": "Trent Reznor and Atticus Ross", "avg": 1.133, "n": 3}, {"name": "MGMT", "avg": 1.129, "n": 3}, {"name": "Clairo", "avg": 1.1, "n": 3}, {"name": "Missy Elliott", "avg": 1.1, "n": 4}, {"name": "Phoebe Bridgers", "avg": 1.04, "n": 5}, {"name": "Julien Baker", "avg": 1.033, "n": 3}, {"name": "Pharrell Williams", "avg": 1.033, "n": 3}, {"name": "Tyler, The Creator", "avg": 1.033, "n": 3}, {"name": "Sade", "avg": 1.02, "n": 3}, {"name": "Oasis", "avg": 1.0, "n": 3}, {"name": "Sufjan Stevens", "avg": 1.0, "n": 3}, {"name": "The Postal Service", "avg": 0.998, "n": 3}, {"name": "Khruangbin", "avg": 0.998, "n": 3}, {"name": "Jimmy Eat World", "avg": 0.995, "n": 4}, {"name": "The Weakerthans", "avg": 0.98, "n": 4}, {"name": "The Cure", "avg": 0.979, "n": 3}, {"name": "The Armed", "avg": 0.97, "n": 3}, {"name": "Frank Ocean", "avg": 0.967, "n": 3}, {"name": "Mariah Carey", "avg": 0.967, "n": 3}, {"name": "Bright Eyes", "avg": 0.967, "n": 3}, {"name": "Lana Del Rey", "avg": 0.964, "n": 3}, {"name": "The Notorious B.I.G.", "avg": 0.933, "n": 3}, {"name": "Ratatat", "avg": 0.929, "n": 3}, {"name": "Snoop Dogg", "avg": 0.9, "n": 4}, {"name": "Beyoncé", "avg": 0.9, "n": 5}, {"name": "Kevin Devine", "avg": 0.886, "n": 3}, {"name": "Regina Spektor", "avg": 0.837, "n": 3}, {"name": "2Pac", "avg": 0.833, "n": 3}, {"name": "Doja Cat", "avg": 0.833, "n": 5}, {"name": "The Beatles", "avg": 0.729, "n": 5}, {"name": "Lil Wayne", "avg": 0.675, "n": 4}, {"name": "JAŸ-Z", "avg": 0.65, "n": 4}, {"name": "Sublime", "avg": 0.633, "n": 3}, {"name": "Tame Impala", "avg": 0.633, "n": 3}, {"name": "Kesha", "avg": 0.62, "n": 3}, {"name": "Lady Gaga", "avg": 0.6, "n": 3}, {"name": "Black Sabbath", "avg": 0.567, "n": 3}, {"name": "NOFX", "avg": 0.5, "n": 4}, {"name": "Brand New", "avg": 0.5, "n": 3}, {"name": "Deftones", "avg": 0.467, "n": 3}];
 const maxCount = ARTIST_FREQ[0].total;
 const freqList = document.getElementById('freqList');
 
@@ -963,6 +1060,25 @@ freqList.innerHTML = ARTIST_FREQ.map((d, i) => {
       <span class="freq-count">${d.total}</span>
     </div>`;
 }).join('');
+
+const perfList = document.getElementById('perfList');
+if (ARTIST_PERF.length) {
+  const maxPerf = Math.max(...ARTIST_PERF.map(d => d.avg));
+  perfList.innerHTML = ARTIST_PERF.map((d, i) => {
+    const fillPct = (d.avg / maxPerf * 100).toFixed(2) + '%';
+    const baselinePct = (1 / maxPerf * 100).toFixed(2) + '%';
+    return `
+      <div class="perf-row">
+        <span class="freq-rank">${i + 1}</span>
+        <div class="perf-bar-wrap">
+          <div class="perf-fill" style="width:${fillPct}"></div>
+          <div class="perf-baseline" style="left:${baselinePct}" title="1.00x -- exactly average"></div>
+          <span class="freq-name">${d.name}</span>
+        </div>
+        <span class="perf-value">${d.avg.toFixed(2)}x <span class="perf-n">(n=${d.n})</span></span>
+      </div>`;
+  }).join('');
+}
 </script>
 </body>
 </html>
