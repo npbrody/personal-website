@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sampling error demo</title>
+<style>
+.sed {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #ffffff;
+  color: #1b1f24;
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+.sed *, .sed *::before, .sed *::after { box-sizing: border-box; }
+.sed h2 { font-size: 1.3rem; margin: 0 0 6px; }
+.sed p { margin: 0 0 12px; }
+.sed .sed-lead { color: #4a5560; }
+.sed svg { width: 100%; height: auto; display: block; overflow: hidden; }
+.sed .sed-row { display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 12px 0; align-items: center; }
+.sed .sed-slider { flex: 1 1 300px; }
+.sed .sed-slider label { display: block; font-weight: 600; font-size: 0.92rem; margin-bottom: 2px; }
+.sed input[type="range"] { width: 100%; accent-color: #0072B2; }
+.sed .sed-slider.g2 input[type="range"] { accent-color: #D55E00; }
+.sed .sed-check { font-size: 0.92rem; display: inline-flex; gap: 6px; align-items: flex-start; cursor: pointer; }
+.sed .sed-check input { margin-top: 3px; }
+.sed button {
+  font: inherit; font-size: 0.85rem; padding: 5px 10px; border: 1px solid #afb8c1;
+  background: #f6f8fa; color: #1b1f24; border-radius: 6px; cursor: pointer;
+}
+.sed button:hover { background: #eaeef2; }
+.sed .sed-presets span { font-size: 0.92rem; color: #4a5560; }
+.sed .sed-tablewrap { overflow-x: auto; margin: 8px 0 12px; }
+.sed table { border-collapse: collapse; width: 100%; font-size: 0.88rem; min-width: 540px; }
+.sed th, .sed td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e3e8ee; white-space: nowrap; }
+.sed th { font-weight: 600; color: #4a5560; }
+.sed .sed-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+.sed .sed-test { background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 8px; padding: 10px 14px; margin: 0 0 12px; font-size: 0.92rem; }
+.sed .sed-test[hidden] { display: none; }
+.sed .sed-test p { margin: 0 0 6px; }
+.sed .sed-test p:last-child { margin: 0; color: #4a5560; }
+.sed details { margin-top: 10px; font-size: 0.9rem; }
+.sed summary { cursor: pointer; font-weight: 600; }
+.sed .sed-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; margin: 10px 0; }
+.sed .sed-grid label { display: block; font-size: 0.82rem; color: #4a5560; }
+.sed .sed-grid input[type="text"], .sed .sed-grid input[type="number"] {
+  width: 100%; font: inherit; font-size: 0.92rem; padding: 4px 6px; border: 1px solid #afb8c1; border-radius: 5px;
+}
+</style>
+</head>
+<body>
+ 
+<div class="sed" id="sed">
+  <h2>Why we need statistics: sampling error</h2>
+  <p class="sed-lead">Each dot is a sample mean. The bars show the range where the true population mean plausibly sits. Change the sample sizes and watch what happens to the bars.</p>
+ 
+  <svg id="sed-chart" viewBox="0 0 720 300" role="img" aria-label="Interval plot of two sample means"></svg>
+ 
+  <div class="sed-row">
+    <label class="sed-check"><input type="checkbox" id="sed-showse" checked> Show ±1 standard error (thick bar, about 68%)</label>
+    <label class="sed-check"><input type="checkbox" id="sed-show95" checked> Show 95% interval (thin bar, mean ± 1.96 × SE)</label>
+  </div>
+ 
+  <div class="sed-row">
+    <div class="sed-slider g1">
+      <label for="sed-n1"><span id="sed-lab1"></span> sample size: <output id="sed-out1"></output></label>
+      <input type="range" id="sed-n1" min="5" max="600" step="1" value="16">
+    </div>
+    <div class="sed-slider g2">
+      <label for="sed-n2"><span id="sed-lab2"></span> sample size: <output id="sed-out2"></output></label>
+      <input type="range" id="sed-n2" min="5" max="600" step="1" value="26">
+    </div>
+  </div>
+ 
+  <div class="sed-row sed-presets">
+    <label class="sed-check"><input type="checkbox" id="sed-link"> Keep the two groups the same size</label>
+  </div>
+  <div class="sed-row sed-presets">
+    <span>Quick settings:</span>
+    <button type="button" data-n1="16" data-n2="26">Class example (16 and 26)</button>
+    <button type="button" data-n1="50" data-n2="50">50 each</button>
+    <button type="button" data-n1="100" data-n2="100">100 each</button>
+    <button type="button" data-n1="250" data-n2="250">250 each</button>
+    <button type="button" data-n1="500" data-n2="500">500 each</button>
+  </div>
+ 
+  <div class="sed-tablewrap">
+    <table>
+      <thead>
+        <tr><th>Group</th><th>n</th><th>Mean</th><th>SD</th><th>SE (SD ÷ √n)</th><th>Mean ± 1 SE</th><th>95% interval</th></tr>
+      </thead>
+      <tbody id="sed-tbody"></tbody>
+    </table>
+  </div>
+ 
+  <p id="sed-overlap" aria-live="polite"></p>
+ 
+  <div class="sed-row">
+    <label class="sed-check"><input type="checkbox" id="sed-showt"> Show a preview of the independent-samples t-test (we cover this later in the course)</label>
+  </div>
+  <div class="sed-test" id="sed-test" hidden aria-live="polite">
+    <p id="sed-test-main"></p>
+    <p>Intervals can overlap a little and the difference can still be significant, so the test, not the picture, makes the call. This is an independent-samples t-test with pooled variance (the "equal variances assumed" row in SPSS), and the p value is two-tailed.</p>
+  </div>
+ 
+  <details>
+    <summary>Edit the example</summary>
+    <div class="sed-grid">
+      <div><label for="sed-name1">Group 1 name</label><input type="text" id="sed-name1" value="From Washington"></div>
+      <div><label for="sed-m1">Group 1 mean</label><input type="number" id="sed-m1" value="5" step="0.01"></div>
+      <div><label for="sed-s1">Group 1 SD</label><input type="number" id="sed-s1" value="1.27" step="0.01" min="0.01"></div>
+      <div><label for="sed-name2">Group 2 name</label><input type="text" id="sed-name2" value="Not from Washington"></div>
+      <div><label for="sed-m2">Group 2 mean</label><input type="number" id="sed-m2" value="4.75" step="0.01"></div>
+      <div><label for="sed-s2">Group 2 SD</label><input type="number" id="sed-s2" value="1.58" step="0.01" min="0.01"></div>
+      <div><label for="sed-lo">Scale minimum</label><input type="number" id="sed-lo" value="1" step="1"></div>
+      <div><label for="sed-hi">Scale maximum</label><input type="number" id="sed-hi" value="7" step="1"></div>
+      <div><label for="sed-axis">Axis label</label><input type="text" id="sed-axis" value="Confidence that UPS is the right college (1 to 7 scale)"></div>
+    </div>
+    <button type="button" id="sed-reset">Reset everything</button>
+  </details>
+</div>
+ 
+<script>
+(function () {
+  'use strict';
+ 
+  var C1 = '#0072B2', C2 = '#D55E00';
+  var NS = 'http://www.w3.org/2000/svg';
+  var DEFAULTS = {
+    'sed-name1': 'From Washington', 'sed-m1': '5', 'sed-s1': '1.27', 'sed-n1': '16',
+    'sed-name2': 'Not from Washington', 'sed-m2': '4.75', 'sed-s2': '1.58', 'sed-n2': '26',
+    'sed-lo': '1', 'sed-hi': '7',
+    'sed-axis': 'Confidence that UPS is the right college (1 to 7 scale)'
+  };
+ 
+  function $(id) { return document.getElementById(id); }
+ 
+  function el(name, attrs, text) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) { if (Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]); }
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+ 
+  function f2(x) { return (Math.round(x * 100) / 100).toFixed(2); }
+ 
+  function fmtP(p) {
+    if (p < 0.001) return '< .001';
+    return p.toFixed(3).replace(/^0/, '');
+  }
+ 
+  // STATS-START
+  function lgamma(x) {
+    var c = [76.18009172947146, -86.50532032941677, 24.01409824083091,
+             -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+    var y = x, tmp = x + 5.5;
+    tmp -= (x + 0.5) * Math.log(tmp);
+    var ser = 1.000000000190015;
+    for (var j = 0; j < 6; j++) { y += 1; ser += c[j] / y; }
+    return -tmp + Math.log(2.5066282746310005 * ser / x);
+  }
+ 
+  function betacf(a, b, x) {
+    var MAXIT = 300, EPS = 3e-14, FPMIN = 1e-300;
+    var qab = a + b, qap = a + 1, qam = a - 1;
+    var c = 1, d = 1 - qab * x / qap;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    d = 1 / d;
+    var h = d;
+    for (var m = 1; m <= MAXIT; m++) {
+      var m2 = 2 * m;
+      var aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d; h *= d * c;
+      aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d;
+      var del = d * c;
+      h *= del;
+      if (Math.abs(del - 1) < EPS) break;
+    }
+    return h;
+  }
+ 
+  function ibeta(x, a, b) {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    var bt = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+    if (x < (a + 1) / (a + b + 2)) return bt * betacf(a, b, x) / a;
+    return 1 - bt * betacf(b, a, 1 - x) / b;
+  }
+ 
+  function tTwoTailP(t, df) {
+    return ibeta(df / (df + t * t), df / 2, 0.5);
+  }
+  // STATS-END
+ 
+  function read() {
+    return {
+      name1: $('sed-name1').value || 'Group 1',
+      name2: $('sed-name2').value || 'Group 2',
+      m1: parseFloat($('sed-m1').value), s1: parseFloat($('sed-s1').value), n1: parseInt($('sed-n1').value, 10),
+      m2: parseFloat($('sed-m2').value), s2: parseFloat($('sed-s2').value), n2: parseInt($('sed-n2').value, 10),
+      lo: parseFloat($('sed-lo').value), hi: parseFloat($('sed-hi').value),
+      axis: $('sed-axis').value,
+      showSE: $('sed-showse').checked, show95: $('sed-show95').checked, showT: $('sed-showt').checked
+    };
+  }
+ 
+  function valid(s) {
+    var nums = [s.m1, s.s1, s.m2, s.s2, s.lo, s.hi, s.n1, s.n2];
+    for (var i = 0; i < nums.length; i++) { if (!isFinite(nums[i])) return false; }
+    return s.s1 > 0 && s.s2 > 0 && s.hi > s.lo && s.n1 >= 2 && s.n2 >= 2;
+  }
+ 
+  function draw(g, s) {
+    var svg = $('sed-chart');
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+ 
+    var W = 720, ml = 34, mr = 34, axisY = 250;
+    function X(v) { return ml + (v - s.lo) / (s.hi - s.lo) * (W - ml - mr); }
+ 
+    // overlap band (drawn first so it sits behind everything)
+    var kind = s.show95 ? 'ci' : (s.showSE ? 'se' : null);
+    if (kind) {
+      var l1 = kind === 'ci' ? g[0].ciLo : g[0].seLo, h1 = kind === 'ci' ? g[0].ciHi : g[0].seHi;
+      var l2 = kind === 'ci' ? g[1].ciLo : g[1].seLo, h2 = kind === 'ci' ? g[1].ciHi : g[1].seHi;
+      var oLo = Math.max(l1, l2), oHi = Math.min(h1, h2);
+      if (oLo < oHi) {
+        var bx = X(oLo), bw = X(oHi) - X(oLo);
+        svg.appendChild(el('rect', { x: bx, y: 78, width: bw, height: 160, fill: '#6e7781', 'fill-opacity': 0.13 }));
+        if (bw > 46) svg.appendChild(el('text', { x: bx + bw / 2, y: 232, 'text-anchor': 'middle', 'font-size': 12, fill: '#4a5560' }, 'overlap'));
+      }
+    }
+ 
+    // axis
+    svg.appendChild(el('line', { x1: X(s.lo), y1: axisY, x2: X(s.hi), y2: axisY, stroke: '#57606a', 'stroke-width': 1.5 }));
+    var step = Math.max(1, Math.ceil((s.hi - s.lo) / 10));
+    for (var v = s.lo; v <= s.hi + 1e-9; v += step) {
+      svg.appendChild(el('line', { x1: X(v), y1: axisY, x2: X(v), y2: axisY + 6, stroke: '#57606a', 'stroke-width': 1.5 }));
+      svg.appendChild(el('text', { x: X(v), y: axisY + 22, 'text-anchor': 'middle', 'font-size': 13, fill: '#1b1f24' }, String(Math.round(v * 100) / 100)));
+    }
+    svg.appendChild(el('text', { x: W / 2, y: 292, 'text-anchor': 'middle', 'font-size': 13, fill: '#4a5560' }, s.axis));
+ 
+    // rows
+    var ys = [110, 200];
+    for (var i = 0; i < 2; i++) {
+      var d = g[i], y = ys[i];
+      svg.appendChild(el('text', { x: ml, y: y - 46, 'font-size': 15, 'font-weight': 600, fill: d.color }, d.name + ' (mean ' + f2(d.m) + ')'));
+ 
+      var endLo = null, endHi = null;
+      if (s.show95) {
+        svg.appendChild(el('line', { x1: X(d.ciLo), y1: y, x2: X(d.ciHi), y2: y, stroke: d.color, 'stroke-width': 2.5 }));
+        svg.appendChild(el('line', { x1: X(d.ciLo), y1: y - 9, x2: X(d.ciLo), y2: y + 9, stroke: d.color, 'stroke-width': 2.5 }));
+        svg.appendChild(el('line', { x1: X(d.ciHi), y1: y - 9, x2: X(d.ciHi), y2: y + 9, stroke: d.color, 'stroke-width': 2.5 }));
+        endLo = d.ciLo; endHi = d.ciHi;
+      }
+      if (s.showSE) {
+        svg.appendChild(el('rect', {
+          x: X(d.seLo), y: y - 7, width: Math.max(1, X(d.seHi) - X(d.seLo)), height: 14,
+          fill: d.color, 'fill-opacity': 0.3, stroke: d.color, 'stroke-width': 1.5
+        }));
+        if (endLo === null) { endLo = d.seLo; endHi = d.seHi; }
+      }
+      if (endLo !== null) {
+        svg.appendChild(el('text', { x: X(endLo), y: y - 16, 'text-anchor': 'middle', 'font-size': 12, fill: '#4a5560' }, f2(endLo)));
+        svg.appendChild(el('text', { x: X(endHi), y: y - 16, 'text-anchor': 'middle', 'font-size': 12, fill: '#4a5560' }, f2(endHi)));
+      }
+      svg.appendChild(el('circle', { cx: X(d.m), cy: y, r: 6.5, fill: d.color, stroke: '#ffffff', 'stroke-width': 2 }));
+    }
+  }
+ 
+  function cell(tr, text, tag) {
+    var c = document.createElement(tag || 'td');
+    c.textContent = text;
+    tr.appendChild(c);
+    return c;
+  }
+ 
+  function update() {
+    var s = read();
+    $('sed-lab1').textContent = s.name1;
+    $('sed-lab2').textContent = s.name2;
+    $('sed-out1').textContent = s.n1;
+    $('sed-out2').textContent = s.n2;
+ 
+    var note = $('sed-overlap');
+    if (!valid(s)) {
+      note.textContent = 'Check the example settings: SDs must be positive and the scale maximum must be larger than the minimum.';
+      return;
+    }
+ 
+    var crit = 1.96;
+    var raw = [
+      { name: s.name1, m: s.m1, sd: s.s1, n: s.n1, color: C1 },
+      { name: s.name2, m: s.m2, sd: s.s2, n: s.n2, color: C2 }
+    ];
+    var g = raw.map(function (d) {
+      d.se = d.sd / Math.sqrt(d.n);
+      d.seLo = d.m - d.se; d.seHi = d.m + d.se;
+      d.ciLo = d.m - crit * d.se; d.ciHi = d.m + crit * d.se;
+      return d;
+    });
+ 
+    draw(g, s);
+ 
+    $('sed-chart').setAttribute('aria-label',
+      'Interval plot. ' + g[0].name + ': mean ' + f2(g[0].m) + ', 95% interval ' + f2(g[0].ciLo) + ' to ' + f2(g[0].ciHi) + '. ' +
+      g[1].name + ': mean ' + f2(g[1].m) + ', 95% interval ' + f2(g[1].ciLo) + ' to ' + f2(g[1].ciHi) + '.');
+ 
+    var tb = $('sed-tbody');
+    while (tb.firstChild) tb.removeChild(tb.firstChild);
+    g.forEach(function (d) {
+      var tr = document.createElement('tr');
+      var first = cell(tr, '');
+      var sw = document.createElement('span');
+      sw.className = 'sed-swatch';
+      sw.style.background = d.color;
+      first.appendChild(sw);
+      first.appendChild(document.createTextNode(d.name));
+      cell(tr, String(d.n));
+      cell(tr, f2(d.m));
+      cell(tr, f2(d.sd));
+      cell(tr, f2(d.se));
+      cell(tr, f2(d.seLo) + ' to ' + f2(d.seHi));
+      cell(tr, f2(d.ciLo) + ' to ' + f2(d.ciHi));
+      tb.appendChild(tr);
+    });
+ 
+    var oLo = Math.max(g[0].ciLo, g[1].ciLo), oHi = Math.min(g[0].ciHi, g[1].ciHi);
+    if (oLo < oHi) {
+      note.textContent = 'The two 95% intervals overlap between ' + f2(oLo) + ' and ' + f2(oHi) + '.';
+    } else {
+      note.textContent = 'The two 95% intervals do not overlap. The gap between them is ' + f2(oLo - oHi) + ' points.';
+    }
+ 
+    var panel = $('sed-test');
+    if (s.showT) {
+      // Independent-samples t-test, equal variances assumed (pooled variance)
+      var diff = s.m1 - s.m2;
+      var df = s.n1 + s.n2 - 2;
+      var sp = Math.sqrt(((s.n1 - 1) * s.s1 * s.s1 + (s.n2 - 1) * s.s2 * s.s2) / df);
+      var sed = sp * Math.sqrt(1 / s.n1 + 1 / s.n2);
+      var t = diff / sed;
+      var p = tTwoTailP(Math.abs(t), df);
+      var dEff = diff / sp;
+      $('sed-test-main').textContent =
+        'Independent-samples t-test: difference in means = ' + f2(diff) + '. Standard error of the difference = ' + f2(sed) +
+        '. t(' + df + ') = ' + f2(t) + ', p ' + (p < 0.001 ? '' : '= ') + fmtP(p) +
+        (p < 0.05 ? ' (significant at .05)' : ' (not significant at .05)') +
+        '. Cohen\u2019s d = ' + f2(dEff) + '.';
+      panel.hidden = false;
+    } else {
+      panel.hidden = true;
+    }
+  }
+ 
+  // wiring
+  var ids = ['sed-name1', 'sed-name2', 'sed-m1', 'sed-s1', 'sed-m2', 'sed-s2', 'sed-lo', 'sed-hi', 'sed-axis',
+             'sed-showse', 'sed-show95', 'sed-showt'];
+  ids.forEach(function (id) { $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
+ 
+  $('sed-n1').addEventListener('input', function () {
+    if ($('sed-link').checked) $('sed-n2').value = $('sed-n1').value;
+    update();
+  });
+  $('sed-n2').addEventListener('input', function () {
+    if ($('sed-link').checked) $('sed-n1').value = $('sed-n2').value;
+    update();
+  });
+  $('sed-link').addEventListener('change', function () {
+    if ($('sed-link').checked) $('sed-n2').value = $('sed-n1').value;
+    update();
+  });
+ 
+  var buttons = document.querySelectorAll('#sed button[data-n1]');
+  Array.prototype.forEach.call(buttons, function (b) {
+    b.addEventListener('click', function () {
+      $('sed-n1').value = b.getAttribute('data-n1');
+      $('sed-n2').value = b.getAttribute('data-n2');
+      $('sed-link').checked = b.getAttribute('data-n1') === b.getAttribute('data-n2');
+      update();
+    });
+  });
+ 
+  $('sed-reset').addEventListener('click', function () {
+    for (var id in DEFAULTS) { if (Object.prototype.hasOwnProperty.call(DEFAULTS, id)) $(id).value = DEFAULTS[id]; }
+    $('sed-link').checked = false;
+    $('sed-showse').checked = true;
+    $('sed-show95').checked = true;
+    $('sed-showt').checked = false;
+    update();
+  });
+ 
+  update();
+})();
+</script>
+</body>
+</html>
+ 
